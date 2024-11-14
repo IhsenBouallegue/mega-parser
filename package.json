@@ -4,12 +4,12 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "style": "biome check .",
+    "style:fix": "biome check . --write"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "turbo": "^2.2.3",
+    "turbo": "^2.3.0",
     "typescript": "5.5.4"
   },
   "trustedDependencies": ["@biomejs/biome", "esbuild", "sharp"],

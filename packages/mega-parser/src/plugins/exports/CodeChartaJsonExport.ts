@@ -67,9 +67,7 @@ export class CodeChartaJsonExport implements IExportPlugin {
 
     for (let i = 0; i < pathParts.length; i++) {
       const part = pathParts[i];
-      let childNode = currentNode.children?.find(
-        (child) => child.name === part,
-      );
+      let childNode = currentNode.children?.find((child) => child.name === part);
 
       if (!childNode) {
         childNode = {

@@ -1,4 +1,5 @@
 // MegaParser.ts
+
 import { RealLinesOfCodePlugin } from "@/plugins/real-lines-of-code";
 import { SonarComplexityJavaPlugin } from "@/plugins/sonar-complexity-java";
 import type { IMetricPlugin } from "@/types";
@@ -16,39 +17,81 @@ interface FileObject {
   metrics: { [metricName: string]: number };
 }
 
+export enum MetricPluginEnum {
+  RealLinesOfCode = "RealLinesOfCode",
+  SonarComplexity = "SonarComplexity",
+  // Add other metric plugin names here
+}
+
+export enum ExportPluginEnum {
+  SimpleJson = "SimpleJson",
+  CodeChartaJson = "CodeChartaJson",
+  // Add other export plugin names here
+}
+
 export class MegaParser {
+  public rawOutputData: FileObject[];
   private files: FileList;
-  private requestedMetrics: string[];
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  private outputData: any[];
 
-  private metricPlugins: IMetricPlugin[] = [
-    new RealLinesOfCodePlugin(),
-    new SonarComplexityJavaPlugin(),
-    // Add other plugins as needed
-  ];
+  private availableMetricPlugins: Map<MetricPluginEnum, IMetricPlugin> = new Map([
+    [MetricPluginEnum.RealLinesOfCode, new RealLinesOfCodePlugin()],
+    [MetricPluginEnum.SonarComplexity, new SonarComplexityJavaPlugin()],
+    // Add other metric plugins as needed
+  ]);
 
-  private exportPlugins: IExportPlugin[] = [
-    new SimpleJsonExport(),
-    new CodeChartaJsonExport(),
+  private availableExportPlugins: Map<ExportPluginEnum, IExportPlugin> = new Map([
+    [ExportPluginEnum.SimpleJson, new SimpleJsonExport()],
+    [ExportPluginEnum.CodeChartaJson, new CodeChartaJsonExport()],
     // Add other export plugins as needed
-  ];
+  ]);
 
-  constructor(files: FileList, requestedMetrics: string[]) {
+  private enabledMetricPlugins: IMetricPlugin[] = [];
+  private enabledExportPlugins: Map<ExportPluginEnum, IExportPlugin> = new Map();
+
+  private exportOutputs: Map<ExportPluginEnum, string> = new Map();
+
+  constructor(files: FileList) {
     this.files = files;
-    this.requestedMetrics = requestedMetrics;
-    this.outputData = [];
+    this.rawOutputData = [];
   }
 
-  public async run() {
+  /**
+   * Enable metric plugins based on the provided enums.
+   * @param metricPluginEnums Array of MetricPluginEnum to enable.
+   */
+  public setMetricPlugins(metricPluginEnums: MetricPluginEnum[]): void {
+    this.enabledMetricPlugins = [];
+    for (const pluginEnum of metricPluginEnums) {
+      const plugin = this.availableMetricPlugins.get(pluginEnum);
+      if (plugin) {
+        this.enabledMetricPlugins.push(plugin);
+      }
+    }
+  }
+
+  /**
+   * Enable export plugins based on the provided enums.
+   * @param exportPluginEnums Array of ExportPluginEnum to enable.
+   */
+  public setExportPlugins(exportPluginEnums: ExportPluginEnum[]): void {
+    this.enabledExportPlugins.clear();
+    for (const pluginEnum of exportPluginEnums) {
+      const plugin = this.availableExportPlugins.get(pluginEnum);
+      if (plugin) {
+        this.enabledExportPlugins.set(pluginEnum, plugin);
+      }
+    }
+  }
+
+  /**
+   * Runs the parser and computes metrics.
+   */
+  public async run(): Promise<void> {
     const fileObjects = await this.prepareFileObjects();
 
     for (const fileObj of fileObjects) {
-      const applicablePlugins = this.metricPlugins.filter(
-        (plugin) =>
-          this.requestedMetrics.includes(plugin.name) &&
-          (plugin.supportedLanguages.includes(fileObj.language) ||
-            plugin.supportedLanguages.includes("*")),
+      const applicablePlugins = this.enabledMetricPlugins.filter(
+        (plugin) => plugin.supportedLanguages.includes(fileObj.language) || plugin.supportedLanguages.includes("*"),
       );
 
       fileObj.metrics = {};
@@ -58,13 +101,37 @@ export class MegaParser {
         fileObj.metrics[plugin.name] = metricValue;
       }
 
-      this.outputData.push({
+      this.rawOutputData.push({
         path: fileObj.path,
+        name: fileObj.name,
+        language: fileObj.language,
+        content: fileObj.content,
         metrics: fileObj.metrics,
       });
     }
 
-    this.generateOutput();
+    // Generate outputs for each enabled export plugin
+    for (const [pluginEnum, plugin] of this.enabledExportPlugins.entries()) {
+      const exportedContent = plugin.export(this.rawOutputData);
+      this.exportOutputs.set(pluginEnum, exportedContent);
+    }
+  }
+
+  /**
+   * Retrieves the export output for a given export plugin enum.
+   * @param exportPluginEnum ExportPluginEnum value.
+   * @returns The exported content as a string, or undefined if not available.
+   */
+  public getExportOutput(exportPluginEnum: ExportPluginEnum): string | undefined {
+    return this.exportOutputs.get(exportPluginEnum);
+  }
+
+  /**
+   * Retrieves all export outputs.
+   * @returns A Map of ExportPluginEnum to their outputs.
+   */
+  public getAllExportOutputs(): Map<ExportPluginEnum, string> {
+    return this.exportOutputs;
   }
 
   private async prepareFileObjects(): Promise<FileObject[]> {
@@ -77,7 +144,7 @@ export class MegaParser {
       const relativePath = (file as any).webkitRelativePath || file.name;
 
       fileObjects.push({
-        path: relativePath,
+        path: relativePath.replace(/\\/g, "/"), // Normalize paths
         name: file.name,
         language,
         content,
@@ -89,38 +156,13 @@ export class MegaParser {
   }
 
   private readFileContent(file: File): Promise<string> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = (e) => reject(e);
       reader.readAsText(file);
     });
   }
 
-  private generateOutput() {
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    this.exportPlugins.forEach((plugin) => {
-      const exportedContent = plugin.export(this.outputData);
-      const extension = plugin.supportedExtensions[0];
-      const fileName = `output.${extension}`;
-
-      this.downloadFile(exportedContent, fileName);
-    });
-  }
-
-  private downloadFile(content: string, fileName: string) {
-    const blob = new Blob([content], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-
-    // Append to body
-    document.body.appendChild(a);
-    a.click();
-
-    // Clean up
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+  // Removed generateOutput and downloadFile methods since no direct download is needed
 }

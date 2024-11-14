@@ -9,10 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-checkbox": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-scroll-area": "^1.2.1",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.1",
     "mega-parser": "*",
+    "next": "15.0.3",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
-    "next": "15.0.3"
+    "react-json-view": "^1.21.3",
+    "react-json-view-lite": "^2.0.1"
   },
   "devDependencies": {
     "typescript": "^5",

@@ -44,10 +44,7 @@ function removeCommentsAndStrings(code: string): string {
   let codeWithoutCommentsAndStrings = code;
 
   for (const pattern of patterns) {
-    codeWithoutCommentsAndStrings = codeWithoutCommentsAndStrings.replace(
-      pattern,
-      "",
-    );
+    codeWithoutCommentsAndStrings = codeWithoutCommentsAndStrings.replace(pattern, "");
   }
 
   return codeWithoutCommentsAndStrings;
