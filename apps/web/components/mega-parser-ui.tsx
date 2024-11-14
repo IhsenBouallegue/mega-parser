@@ -1,9 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Play } from "lucide-react";
-import { type ExportPluginEnum, type FileObject, MegaParser, MetricPluginEnum } from "mega-parser";
+import { Play } from "lucide-react";
+import { ExportPluginEnum, type FileObject, MegaParser, MetricPluginEnum } from "mega-parser";
 import { useState } from "react";
 import { ExporterSelector } from "./exporter-selector";
 import { FileSelector } from "./file-selector";
@@ -63,15 +62,29 @@ export default function MegaParserUI() {
     setExportOutputs(Object.fromEntries(exportOutputsMap) as Record<ExportPluginEnum, string>);
   };
 
-  const downloadOutput = () => {
-    if (!output) return;
-    const blob = new Blob([JSON.stringify(output, null, 2)], {
-      type: "application/json",
-    });
+  const handleExportDownload = (exporter: ExportPluginEnum) => {
+    const exportData = exportOutputs[exporter];
+    if (!exportData) return;
+
+    let filename = `megaparser-${exporter.toLowerCase()}-output`;
+    let type = "text/plain";
+
+    switch (exporter) {
+      case ExportPluginEnum.SimpleJson:
+        filename += ".json";
+        type = "application/json";
+        break;
+      case ExportPluginEnum.CodeChartaJson:
+        filename += ".cc.json";
+        type = "application/json";
+        break;
+    }
+
+    const blob = new Blob([exportData], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "megaparser-output.json";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -94,14 +107,12 @@ export default function MegaParserUI() {
 
       <div className="w-1/2 bg-muted p-4 flex flex-col">
         <h2 className="text-2xl font-semibold mb-4">Output Preview</h2>
-        <ScrollArea className="flex-grow rounded-md border">
-          <OutputViewer rawOutput={output} exportOutputs={exportOutputs} exporters={exporters} />
-        </ScrollArea>
-        <div className="mt-4">
-          <Button onClick={downloadOutput} disabled={!output} className="w-full">
-            <Download className="mr-2 h-4 w-4" /> Download Results
-          </Button>
-        </div>
+        <OutputViewer
+          rawOutput={output}
+          exportOutputs={exportOutputs}
+          exporters={exporters}
+          onExportDownload={handleExportDownload}
+        />
       </div>
     </div>
   );
