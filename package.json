@@ -1,21 +1,21 @@
 {
   "name": "mega-parser",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/bun": "^1.1.13",
-    "@types/node": "^22.9.0",
-    "typescript": "~5.6.2",
-    "vite": "^5.4.10"
+    "turbo": "^2.2.3",
+    "typescript": "5.5.4"
   },
-  "trustedDependencies": [
-    "@biomejs/biome"
-  ]
+  "trustedDependencies": ["@biomejs/biome", "esbuild", "sharp"],
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "bun@1.1.21",
+  "workspaces": ["apps/*", "packages/*"]
 }
