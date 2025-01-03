@@ -1,18 +1,19 @@
 // MegaParser.ts
 
 import { RealLinesOfCodePlugin } from "@/plugins/real-lines-of-code";
-import { SonarComplexityJavaPlugin } from "@/plugins/sonar-complexity-java";
+import { SonarComplexityPlugin } from "@/plugins/sonar-complexity";
 import type { IMetricPlugin } from "@/types";
 import { detectLanguage } from "@/utils/languge-detector";
 
 import { CodeChartaJsonExport } from "@/plugins/exports/CodeChartaJsonExport";
 import type { IExportPlugin } from "@/plugins/exports/IExportPlugin";
 import { SimpleJsonExport } from "@/plugins/exports/SimpleJsonExport";
+import type { Language } from "@/types/enums";
 
 interface FileObject {
   path: string;
   name: string;
-  language: string;
+  language: Language;
   content: string;
   metrics: { [metricName: string]: number };
 }
@@ -35,7 +36,7 @@ export class MegaParser {
 
   private availableMetricPlugins: Map<MetricPluginEnum, IMetricPlugin> = new Map([
     [MetricPluginEnum.RealLinesOfCode, new RealLinesOfCodePlugin()],
-    [MetricPluginEnum.SonarComplexity, new SonarComplexityJavaPlugin()],
+    [MetricPluginEnum.SonarComplexity, new SonarComplexityPlugin()],
     // Add other metric plugins as needed
   ]);
 
@@ -90,14 +91,14 @@ export class MegaParser {
     const fileObjects = await this.prepareFileObjects();
 
     for (const fileObj of fileObjects) {
-      const applicablePlugins = this.enabledMetricPlugins.filter(
-        (plugin) => plugin.supportedLanguages.includes(fileObj.language) || plugin.supportedLanguages.includes("*"),
+      const applicablePlugins = this.enabledMetricPlugins.filter((plugin) =>
+        plugin.supportedLanguages.includes(fileObj.language),
       );
 
       fileObj.metrics = {};
 
       for (const plugin of applicablePlugins) {
-        const metricValue = plugin.calculate(fileObj.content);
+        const metricValue = plugin.calculate(fileObj.content, fileObj.language);
         fileObj.metrics[plugin.name] = metricValue;
       }
 
