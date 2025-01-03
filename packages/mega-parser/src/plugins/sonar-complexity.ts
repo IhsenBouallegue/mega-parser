@@ -4,7 +4,7 @@ import { Language } from "@/types/enums";
 
 export class SonarComplexityPlugin implements IMetricPlugin {
   name = "sonarComplexity";
-  supportedLanguages = [Language.Java, Language.Kotlin];
+  supportedLanguages = [Language.Java, Language.Kotlin, Language.TypeScript];
   debugInfo?: ComplexityDebug;
 
   calculate(content: string, language: Language, debug = false): number {
@@ -75,16 +75,84 @@ export class SonarComplexityPlugin implements IMetricPlugin {
     ];
   }
 
+  private getTypeScriptPatterns(): { category: string; name: string; regex: string }[] {
+    return [
+      // TypeScript Control Flow
+      { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
+      { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
+      { category: "Control Flow", name: "For", regex: "\\bfor\\b" },
+      { category: "Control Flow", name: "While", regex: "\\bwhile\\b" },
+      { category: "Control Flow", name: "Do While", regex: "\\bdo\\b" },
+      { category: "Control Flow", name: "Try", regex: "\\btry\\b" },
+      { category: "Control Flow", name: "Catch", regex: "\\bcatch\\b" },
+      { category: "Control Flow", name: "Throw", regex: "\\bthrow\\b" },
+      { category: "Control Flow", name: "Switch", regex: "\\bswitch\\b" },
+      { category: "Control Flow", name: "Case", regex: "\\bcase\\b(?!\\s*:.*\\bcase\\b)" },
+
+      // TypeScript Operators
+      { category: "Operators", name: "AND", regex: "&&(?!\\s*\\{)" },
+      { category: "Operators", name: "OR", regex: "\\|\\|(?!\\s*\\{)" },
+      { category: "Operators", name: "Nullish", regex: "\\?\\?(?!\\s*\\{)" },
+      // Don't match:
+      // - Type annotations (?:)
+      // - Optional properties (?<identifier>)
+      // - Optional chaining (?.)
+      // - Type unions (string | number)
+      {
+        category: "Operators",
+        name: "Ternary",
+        // Only match ternary that's followed by an expression, not type annotations
+        regex: "\\?(?=\\s*[\\w'\"`\\(\\[{]|\\s*(?:true|false|null))(?![.:])",
+      },
+
+      // TypeScript Specific
+      {
+        category: "TypeScript Specific",
+        name: "Optional Chaining",
+        regex: "\\w+(?:\\?\\.[\\w$]+)+",
+      },
+      {
+        category: "TypeScript Specific",
+        name: "Type Guard",
+        regex: "\\bis\\s+[A-Z]\\w*\\b",
+      },
+      {
+        category: "TypeScript Specific",
+        name: "Arrow Function",
+        regex: "(?<!\\b(?:case|return|throw|yield|await)\\s*)=>(?!\\s*[{,])",
+      },
+      {
+        category: "TypeScript Specific",
+        name: "Generator",
+        regex: "\\bfunction\\s*\\*",
+      },
+      {
+        category: "TypeScript Specific",
+        name: "Async Function",
+        regex: "\\basync\\s+(?:function|\\()",
+      },
+    ];
+  }
+
   private calculateComplexity(
     code: string,
     language: Language,
     debug: boolean,
   ): { complexity: number; debug?: ComplexityDebug } {
     const cleanCode =
-      language === Language.Java ? removeJavaCommentsAndStrings(code) : removeKotlinCommentsAndStrings(code);
+      language === Language.TypeScript
+        ? removeTypeScriptCommentsAndStrings(code)
+        : language === Language.Java
+          ? removeJavaCommentsAndStrings(code)
+          : removeKotlinCommentsAndStrings(code);
 
     const patterns: ComplexityPattern[] = [];
-    const languagePatterns = language === Language.Java ? this.getJavaPatterns() : this.getKotlinPatterns();
+    const languagePatterns =
+      language === Language.Java
+        ? this.getJavaPatterns()
+        : language === Language.TypeScript
+          ? this.getTypeScriptPatterns()
+          : this.getKotlinPatterns();
 
     // Process each pattern
     for (const { category, name, regex } of languagePatterns) {
@@ -202,6 +270,25 @@ function removeKotlinCommentsAndStrings(code: string): string {
     /"""[\s\S]*?"""/g, // Triple-quoted strings
     /'(?:[^'\\]|\\.)*'/g, // Single-quoted strings
     /`(?:[^`\\]|\\.)*`/g, // Raw strings
+  ];
+
+  let codeWithoutCommentsAndStrings = code;
+
+  for (const pattern of patterns) {
+    codeWithoutCommentsAndStrings = codeWithoutCommentsAndStrings.replace(pattern, "");
+  }
+
+  return codeWithoutCommentsAndStrings;
+}
+
+function removeTypeScriptCommentsAndStrings(code: string): string {
+  const patterns = [
+    /\/\/.*$/gm, // Single-line comments
+    /\/\*[\s\S]*?\*\//g, // Multi-line comments
+    /"(?:[^"\\]|\\.)*"/g, // Double-quoted strings
+    /'(?:[^"\\]|\\.)*'/g, // Single-quoted strings
+    /`(?:[^`\\]|\\.)*`/g, // Template literals
+    /\/(?:[^/\\]|\\.)*\/[gimuy]*/g, // Regular expressions
   ];
 
   let codeWithoutCommentsAndStrings = code;

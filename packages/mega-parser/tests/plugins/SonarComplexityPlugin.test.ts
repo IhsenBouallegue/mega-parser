@@ -79,6 +79,34 @@ describe("SonarComplexityPlugin Tests", () => {
       });
     }
   });
+
+  describe("TypeScript Tests", () => {
+    const loadTypeScriptFile = loadFile("tests/assets/typescript");
+
+    const typeScriptTestCases: TestCase[] = [
+      { fileName: "SimpleClass.ts", expectedComplexity: 1 },
+      { fileName: "IfStatement.ts", expectedComplexity: 2 },
+      { fileName: "ForLoop.ts", expectedComplexity: 2 },
+      { fileName: "OptionalChaining.ts", expectedComplexity: 2 },
+      { fileName: "NullishCoalescing.ts", expectedComplexity: 2 },
+      { fileName: "TypeGuards.ts", expectedComplexity: 3 },
+      { fileName: "AsyncFunction.ts", expectedComplexity: 4 },
+    ];
+
+    for (const { fileName, expectedComplexity } of typeScriptTestCases) {
+      it(`should calculate complexity for ${fileName}`, () => {
+        const code = loadTypeScriptFile(fileName);
+        const result = plugin.calculate(code, Language.TypeScript, true);
+        const debug = plugin.getDebugInfo();
+
+        if (result !== expectedComplexity) {
+          printDebugInfo(fileName, debug);
+        }
+
+        expect(result).toBe(expectedComplexity);
+      });
+    }
+  });
 });
 
 function printDebugInfo(fileName: string, debug: ComplexityDebug | undefined): void {
