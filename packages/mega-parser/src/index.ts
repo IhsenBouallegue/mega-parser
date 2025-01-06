@@ -9,6 +9,7 @@ import { CodeChartaJsonExport } from "@/plugins/exports/CodeChartaJsonExport";
 import type { IExportPlugin } from "@/plugins/exports/IExportPlugin";
 import { SimpleJsonExport } from "@/plugins/exports/SimpleJsonExport";
 import type { Language } from "@/types/enums";
+import { createFileProcessorWorker } from "./workers/worker-factory";
 
 interface FileObject {
   path: string;
@@ -94,6 +95,7 @@ export class MegaParser {
       const applicablePlugins = this.enabledMetricPlugins.filter((plugin) =>
         plugin.supportedLanguages.includes(fileObj.language),
       );
+      console.log(fileObj.language, fileObj.name, applicablePlugins);
 
       fileObj.metrics = {};
 
@@ -136,21 +138,115 @@ export class MegaParser {
   }
 
   private async prepareFileObjects(): Promise<FileObject[]> {
+    // Check if Web Workers are supported
+    if (typeof Worker !== "undefined") {
+      return this.prepareFileObjectsWithWorkers();
+    }
+    return this.prepareFileObjectsSequential();
+  }
+
+  private async prepareFileObjectsSequential(): Promise<FileObject[]> {
+    // Original implementation
     const fileObjects: FileObject[] = [];
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     for (const file of Array.from(this.files)) {
-      const content = await this.readFileContent(file);
-      const language = detectLanguage(file.name);
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const relativePath = (file as any).webkitRelativePath || file.name;
+      try {
+        if (file.size > MAX_FILE_SIZE) {
+          console.warn(`Skipping ${file.name}: File size exceeds limit`);
+          continue;
+        }
 
-      fileObjects.push({
-        path: relativePath.replace(/\\/g, "/"), // Normalize paths
-        name: file.name,
-        language,
-        content,
-        metrics: {},
+        const content = await this.readFileContent(file);
+        const language = detectLanguage(file.name);
+        const relativePath = (file as any).webkitRelativePath || file.name;
+
+        fileObjects.push({
+          path: relativePath.replace(/\\/g, "/"),
+          name: file.name,
+          language,
+          content,
+          metrics: {},
+        });
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+      }
+    }
+
+    return fileObjects;
+  }
+
+  private async prepareFileObjectsWithWorkers(): Promise<FileObject[]> {
+    const fileObjects: FileObject[] = [];
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const MAX_CONCURRENT_WORKERS = 4;
+    const files = Array.from(this.files);
+    let processedFiles = 0;
+
+    // Create chunks of files for parallel processing
+    const chunks: File[][] = [];
+    for (let i = 0; i < files.length; i += MAX_CONCURRENT_WORKERS) {
+      chunks.push(files.slice(i, i + MAX_CONCURRENT_WORKERS));
+    }
+
+    // Process each chunk in parallel
+    for (const chunk of chunks) {
+      const workerPromises = chunk.map((file) => {
+        return new Promise<FileObject | null>((resolve, reject) => {
+          try {
+            const worker = createFileProcessorWorker();
+
+            worker.onmessage = (e) => {
+              const { type, fileObject, message } = e.data;
+
+              if (type === "success") {
+                resolve(fileObject);
+              } else if (type === "warning") {
+                console.warn(message);
+                resolve(null);
+              } else {
+                reject(new Error(message));
+              }
+
+              worker.terminate();
+            };
+
+            worker.onerror = (error) => {
+              reject(error);
+              worker.terminate();
+            };
+
+            worker.postMessage({ file, maxSize: MAX_FILE_SIZE });
+          } catch (error) {
+            console.error(`Worker creation failed for ${file.name}:`, error);
+            resolve(null);
+          }
+        });
       });
+
+      try {
+        const results = await Promise.allSettled(workerPromises);
+
+        for (const result of results) {
+          processedFiles++;
+          // Calculate progress percentage
+          const progress = Math.round((processedFiles / files.length) * 100);
+          // Emit progress event
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("megaparser-progress", {
+                detail: { progress },
+              }),
+            );
+          }
+
+          if (result.status === "fulfilled" && result.value) {
+            fileObjects.push(result.value);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing chunk:", error);
+      }
     }
 
     return fileObjects;
@@ -159,11 +255,27 @@ export class MegaParser {
   private readFileContent(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.onerror = (e) => reject(e);
+      const timeout = setTimeout(() => {
+        reader.abort();
+        reject(new Error(`Timeout reading file ${file.name}`));
+      }, 30000); // 30 second timeout
+
+      reader.onload = (e) => {
+        clearTimeout(timeout);
+        resolve(e.target?.result as string);
+      };
+
+      reader.onerror = (e) => {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to read file ${file.name}: ${e.target?.error?.message || "Unknown error"}`));
+      };
+
+      reader.onabort = () => {
+        clearTimeout(timeout);
+        reject(new Error(`File reading aborted for ${file.name}`));
+      };
+
       reader.readAsText(file);
     });
   }
-
-  // Removed generateOutput and downloadFile methods since no direct download is needed
 }

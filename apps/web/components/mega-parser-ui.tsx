@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { Loader2, Play } from "lucide-react";
 import { ExportPluginEnum, type FileObject, MegaParser, MetricPluginEnum } from "mega-parser";
 import { useState } from "react";
 import { ExporterSelector } from "./exporter-selector";
@@ -20,6 +20,8 @@ export default function MegaParserUI() {
   const [exportOutputs, setExportOutputs] = useState<Record<ExportPluginEnum, string>>(
     () => ({}) as Record<ExportPluginEnum, string>,
   );
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (selectedFiles: FileList | null) => {
     setFiles(selectedFiles);
@@ -44,22 +46,32 @@ export default function MegaParserUI() {
   const runMegaParser = async () => {
     if (!files) return;
 
-    const requestedMetrics = Object.keys(metrics).filter(
-      (metric) => metrics[metric as MetricPluginEnum],
-    ) as MetricPluginEnum[];
+    setIsProcessing(true);
+    setError(null);
 
-    const megaParser = new MegaParser(files);
+    try {
+      const requestedMetrics = Object.keys(metrics).filter(
+        (metric) => metrics[metric as MetricPluginEnum],
+      ) as MetricPluginEnum[];
 
-    megaParser.setMetricPlugins(requestedMetrics);
-    megaParser.setExportPlugins(exporters);
+      const megaParser = new MegaParser(files);
 
-    await megaParser.run();
+      megaParser.setMetricPlugins(requestedMetrics);
+      megaParser.setExportPlugins(exporters);
 
-    const rawData = megaParser.rawOutputData;
-    const exportOutputsMap = megaParser.getAllExportOutputs();
+      await megaParser.run();
 
-    setOutput(rawData);
-    setExportOutputs(Object.fromEntries(exportOutputsMap) as Record<ExportPluginEnum, string>);
+      const rawData = megaParser.rawOutputData;
+      const exportOutputsMap = megaParser.getAllExportOutputs();
+
+      setOutput(rawData);
+      setExportOutputs(Object.fromEntries(exportOutputsMap) as Record<ExportPluginEnum, string>);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while processing files");
+      console.error("MegaParser error:", err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleExportDownload = (exporter: ExportPluginEnum) => {
@@ -99,8 +111,18 @@ export default function MegaParserUI() {
           <FileSelector onFileChange={handleFileChange} />
           <MetricsSelector metrics={metrics} onMetricChange={handleMetricChange} />
           <ExporterSelector exporters={exporters} onExporterChange={handleExporterChange} />
-          <Button onClick={runMegaParser} disabled={!files || exporters.length === 0}>
-            <Play className="mr-2 h-4 w-4" /> Run MegaParser
+          <Button onClick={runMegaParser} disabled={!files || exporters.length === 0 || isProcessing}>
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Run MegaParser
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -114,6 +136,8 @@ export default function MegaParserUI() {
           onExportDownload={handleExportDownload}
         />
       </div>
+
+      {error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-md">{error}</div>}
     </div>
   );
 }

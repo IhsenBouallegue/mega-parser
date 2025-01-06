@@ -11,5 +11,5 @@ export interface FileObject {
 export interface IMetricPlugin {
   name: string;
   supportedLanguages: Language[];
-  calculate(content: string, language: Language): number;
+  calculate(content: string, language: Language, debug?: boolean): number;
 }
