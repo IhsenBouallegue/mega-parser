@@ -6,8 +6,19 @@ export function detectLanguage(fileName: string): Language {
     java: Language.Java,
     ts: Language.TypeScript,
     kt: Language.Kotlin,
-    kts: Language.Kotlin,
-    // ADD EXTENSIONS
+
+    css: Language.CSS,
+    html: Language.HTML,
+    scss: Language.SCSS,
+
+    json: Language.JSON,
+    yaml: Language.YAML,
+    yml: Language.YAML,
+    xml: Language.XML,
+
+    md: Language.Markdown,
+    markdown: Language.Markdown,
+    txt: Language.Text,
   };
   return LanguageExtensions[extension || ""] || Language.Unknown;
 }

@@ -1,23 +1,10 @@
-// MegaParser.ts
-
-import { RealLinesOfCodePlugin } from "@/plugins/real-lines-of-code";
-import { SonarComplexityPlugin } from "@/plugins/sonar-complexity";
-import type { IMetricPlugin } from "@/types";
-import { detectLanguage } from "@/utils/languge-detector";
-
 import { CodeChartaJsonExport } from "@/plugins/exports/CodeChartaJsonExport";
 import type { IExportPlugin } from "@/plugins/exports/IExportPlugin";
 import { SimpleJsonExport } from "@/plugins/exports/SimpleJsonExport";
-import type { Language } from "@/types/enums";
-import { createFileProcessorWorker } from "./workers/worker-factory";
-
-interface FileObject {
-  path: string;
-  name: string;
-  language: Language;
-  content: string;
-  metrics: { [metricName: string]: number };
-}
+import { RealLinesOfCodePlugin } from "@/plugins/real-lines-of-code";
+import { SonarComplexityPlugin } from "@/plugins/sonar-complexity";
+import type { FileInput, FileObject, IMetricPlugin } from "@/types";
+import { detectLanguage } from "@/utils/languge-detector";
 
 export enum MetricPluginEnum {
   RealLinesOfCode = "RealLinesOfCode",
@@ -32,29 +19,26 @@ export enum ExportPluginEnum {
 }
 
 export class MegaParser {
-  public rawOutputData: FileObject[];
-  private files: FileList;
+  public rawOutputData: FileObject[] = [];
+  private files: FileInput[];
+  private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-  private availableMetricPlugins: Map<MetricPluginEnum, IMetricPlugin> = new Map([
+  private availableMetricPlugins = new Map<MetricPluginEnum, IMetricPlugin>([
     [MetricPluginEnum.RealLinesOfCode, new RealLinesOfCodePlugin()],
     [MetricPluginEnum.SonarComplexity, new SonarComplexityPlugin()],
-    // Add other metric plugins as needed
   ]);
 
-  private availableExportPlugins: Map<ExportPluginEnum, IExportPlugin> = new Map([
+  private availableExportPlugins = new Map<ExportPluginEnum, IExportPlugin>([
     [ExportPluginEnum.SimpleJson, new SimpleJsonExport()],
     [ExportPluginEnum.CodeChartaJson, new CodeChartaJsonExport()],
-    // Add other export plugins as needed
   ]);
 
   private enabledMetricPlugins: IMetricPlugin[] = [];
-  private enabledExportPlugins: Map<ExportPluginEnum, IExportPlugin> = new Map();
+  private enabledExportPlugins = new Map<ExportPluginEnum, IExportPlugin>();
+  private exportOutputs = new Map<ExportPluginEnum, string>();
 
-  private exportOutputs: Map<ExportPluginEnum, string> = new Map();
-
-  constructor(files: FileList) {
+  constructor(files: FileInput[]) {
     this.files = files;
-    this.rawOutputData = [];
   }
 
   /**
@@ -95,7 +79,6 @@ export class MegaParser {
       const applicablePlugins = this.enabledMetricPlugins.filter((plugin) =>
         plugin.supportedLanguages.includes(fileObj.language),
       );
-      console.log(fileObj.language, fileObj.name, applicablePlugins);
 
       fileObj.metrics = {};
 
@@ -138,34 +121,25 @@ export class MegaParser {
   }
 
   private async prepareFileObjects(): Promise<FileObject[]> {
-    // Check if Web Workers are supported
-    if (typeof Worker !== "undefined") {
-      return this.prepareFileObjectsWithWorkers();
-    }
-    return this.prepareFileObjectsSequential();
-  }
-
-  private async prepareFileObjectsSequential(): Promise<FileObject[]> {
-    // Original implementation
     const fileObjects: FileObject[] = [];
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-    for (const file of Array.from(this.files)) {
+    for (const file of this.files) {
       try {
-        if (file.size > MAX_FILE_SIZE) {
-          console.warn(`Skipping ${file.name}: File size exceeds limit`);
+        if (file.size > this.MAX_FILE_SIZE) {
+          console.warn(
+            `Skipping ${file.name}: File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds limit of ${
+              this.MAX_FILE_SIZE / 1024 / 1024
+            }MB`,
+          );
           continue;
         }
 
-        const content = await this.readFileContent(file);
         const language = detectLanguage(file.name);
-        const relativePath = (file as any).webkitRelativePath || file.name;
-
         fileObjects.push({
-          path: relativePath.replace(/\\/g, "/"),
+          path: file.path.replace(/\\/g, "/"),
           name: file.name,
           language,
-          content,
+          content: file.content,
           metrics: {},
         });
       } catch (error) {
@@ -174,108 +148,5 @@ export class MegaParser {
     }
 
     return fileObjects;
-  }
-
-  private async prepareFileObjectsWithWorkers(): Promise<FileObject[]> {
-    const fileObjects: FileObject[] = [];
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
-    const MAX_CONCURRENT_WORKERS = 4;
-    const files = Array.from(this.files);
-    let processedFiles = 0;
-
-    // Create chunks of files for parallel processing
-    const chunks: File[][] = [];
-    for (let i = 0; i < files.length; i += MAX_CONCURRENT_WORKERS) {
-      chunks.push(files.slice(i, i + MAX_CONCURRENT_WORKERS));
-    }
-
-    // Process each chunk in parallel
-    for (const chunk of chunks) {
-      const workerPromises = chunk.map((file) => {
-        return new Promise<FileObject | null>((resolve, reject) => {
-          try {
-            const worker = createFileProcessorWorker();
-
-            worker.onmessage = (e) => {
-              const { type, fileObject, message } = e.data;
-
-              if (type === "success") {
-                resolve(fileObject);
-              } else if (type === "warning") {
-                console.warn(message);
-                resolve(null);
-              } else {
-                reject(new Error(message));
-              }
-
-              worker.terminate();
-            };
-
-            worker.onerror = (error) => {
-              reject(error);
-              worker.terminate();
-            };
-
-            worker.postMessage({ file, maxSize: MAX_FILE_SIZE });
-          } catch (error) {
-            console.error(`Worker creation failed for ${file.name}:`, error);
-            resolve(null);
-          }
-        });
-      });
-
-      try {
-        const results = await Promise.allSettled(workerPromises);
-
-        for (const result of results) {
-          processedFiles++;
-          // Calculate progress percentage
-          const progress = Math.round((processedFiles / files.length) * 100);
-          // Emit progress event
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("megaparser-progress", {
-                detail: { progress },
-              }),
-            );
-          }
-
-          if (result.status === "fulfilled" && result.value) {
-            fileObjects.push(result.value);
-          }
-        }
-      } catch (error) {
-        console.error("Error processing chunk:", error);
-      }
-    }
-
-    return fileObjects;
-  }
-
-  private readFileContent(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      const timeout = setTimeout(() => {
-        reader.abort();
-        reject(new Error(`Timeout reading file ${file.name}`));
-      }, 30000); // 30 second timeout
-
-      reader.onload = (e) => {
-        clearTimeout(timeout);
-        resolve(e.target?.result as string);
-      };
-
-      reader.onerror = (e) => {
-        clearTimeout(timeout);
-        reject(new Error(`Failed to read file ${file.name}: ${e.target?.error?.message || "Unknown error"}`));
-      };
-
-      reader.onabort = () => {
-        clearTimeout(timeout);
-        reject(new Error(`File reading aborted for ${file.name}`));
-      };
-
-      reader.readAsText(file);
-    });
   }
 }

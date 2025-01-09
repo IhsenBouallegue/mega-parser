@@ -1,5 +1,12 @@
 import type { Language } from "./enums";
 
+export interface FileInput {
+  path: string;
+  name: string;
+  content: string;
+  size: number;
+}
+
 export interface FileObject {
   path: string;
   name: string;

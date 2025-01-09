@@ -3,7 +3,7 @@ import type { ComplexityDebug, ComplexityPattern } from "@/types/debug";
 import { Language } from "@/types/enums";
 
 export class SonarComplexityPlugin implements IMetricPlugin {
-  name = "sonarComplexity";
+  name = "sonar_complexity";
   supportedLanguages = [Language.Java, Language.Kotlin, Language.TypeScript];
   debugInfo?: ComplexityDebug;
 
