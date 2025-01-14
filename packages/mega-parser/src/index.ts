@@ -4,7 +4,11 @@ import { SimpleJsonExport } from "@/plugins/exports/SimpleJsonExport";
 import { RealLinesOfCodePlugin } from "@/plugins/real-lines-of-code";
 import { SonarComplexityPlugin } from "@/plugins/sonar-complexity";
 import type { FileInput, FileObject, IMetricPlugin } from "@/types";
+import { Language } from "@/types/enums";
 import { detectLanguage } from "@/utils/languge-detector";
+
+export type { FileInput, FileObject, IMetricPlugin, IExportPlugin };
+export { Language, detectLanguage };
 
 export enum MetricPluginEnum {
   RealLinesOfCode = "RealLinesOfCode",

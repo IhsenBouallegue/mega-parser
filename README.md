@@ -1,81 +1,150 @@
-# Turborepo starter
+# MegaParser
 
-This is an official starter Turborepo.
+MegaParser is a powerful code analysis tool that helps you understand your codebase through various metrics and visualizations. It supports multiple programming languages and provides both CLI and web interfaces for easy usage.
 
-## Using this example
-
-Run the following command:
-
-```sh
-npx create-turbo@latest
-```
-
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## 📦 Repository Structure
 
 ```
-cd my-turborepo
-pnpm build
+mega-parser/
+├── apps/
+│   └── web/          # Web interface for MegaParser
+├── packages/
+│   ├── cli/          # Command-line interface
+│   ├── mega-parser/  # Core analysis engine
+│   └── mega-parser-perf/ # Performance testing utilities
 ```
 
-### Develop
+## 🚀 Features
 
-To develop all apps and packages, run the following command:
+- Multi-language support (Java, TypeScript, Kotlin, and more)
+- Multiple analysis metrics:
+  - Real Lines of Code (RLOC)
+  - Sonar Complexity
+- Multiple export formats:
+  - Simple JSON
+  - CodeCharta JSON (for visualization)
+- File filtering capabilities:
+  - Respect .gitignore rules
+  - Custom exclude patterns
+- Both CLI and web interfaces
+- Real-time language statistics and file analysis
 
+## 📋 Prerequisites
+
+- [Bun](https://bun.sh/) >= 1.0.0
+- Node.js >= 18
+
+## 🛠️ Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/mega-parser.git
+cd mega-parser
 ```
-cd my-turborepo
-pnpm dev
+
+2. Install dependencies:
+```bash
+bun install
 ```
 
-### Remote Caching
-
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
+3. Build all packages:
+```bash
+bun run build
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## 📦 Packages
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+### Core Package (`packages/mega-parser`)
+The core analysis engine that powers both the CLI and web interface.
 
+Features:
+- Language detection
+- Metric calculation
+- Export generation
+- File processing
+
+### CLI Tool (`packages/cli`)
+A command-line interface for running MegaParser.
+
+Usage:
+```bash
+# Interactive mode
+bun run dev
+
+# Direct command mode
+bun run dev --path "./src" --metrics RealLinesOfCode,SonarComplexity --exporters SimpleJson,CodeChartaJson
 ```
-npx turbo link
+
+Options:
+- `--path`: Path to file or directory to analyze
+- `--metrics`: Comma-separated list of metrics (RealLinesOfCode, SonarComplexity)
+- `--exporters`: Comma-separated list of exporters (SimpleJson, CodeChartaJson)
+- `--no-ignore`: Disable .gitignore functionality
+- `--exclude`: Comma-separated list of glob patterns to exclude
+
+### Web Interface (`apps/web`)
+A modern web application for using MegaParser with a graphical interface.
+
+Features:
+- File/directory selection
+- Real-time statistics
+- Language distribution visualization
+- Configurable file filtering
+- Multiple export formats
+- Interactive metric selection
+
+To run the web interface:
+```bash
+cd apps/web
+bun run dev
 ```
 
-## Useful Links
+## 🧪 Development
 
-Learn more about the power of Turborepo:
+1. Start all packages in development mode:
+```bash
+bun run dev
+```
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+2. Run style checks:
+```bash
+bun run style
+```
+
+3. Fix style issues:
+```bash
+bun run style:fix
+```
+
+## 🔧 Configuration
+
+### File Filtering
+Both CLI and web interface support:
+- .gitignore rules (enabled by default)
+- Custom exclude patterns
+- Default ignores: node_modules, .git, etc.
+
+### Supported Languages
+- Java
+- TypeScript
+- Kotlin
+- CSS
+- HTML
+- SCSS
+- JSON
+- YAML
+- XML
+- Markdown
+- Text files
+
+## 📄 License
+
+[Add your license here]
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
