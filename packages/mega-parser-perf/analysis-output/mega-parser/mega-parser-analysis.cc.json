@@ -1,0 +1,77 @@
+{
+  "projectName": "MegaParser Project",
+  "apiVersion": "1.0",
+  "nodes": [
+    {
+      "name": "root",
+      "type": "Folder",
+      "attributes": {},
+      "children": [
+        {
+          "name": "kotlin",
+          "type": "Folder",
+          "attributes": {},
+          "children": [
+            {
+              "name": "complex.kt",
+              "type": "File",
+              "attributes": {
+                "rloc": 50,
+                "sonar_complexity": 18
+              },
+              "children": []
+            },
+            {
+              "name": "simple.kt",
+              "type": "File",
+              "attributes": {
+                "rloc": 10,
+                "sonar_complexity": 3
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "sonar-project.properties",
+          "type": "File",
+          "attributes": {},
+          "children": []
+        },
+        {
+          "name": "typescript",
+          "type": "Folder",
+          "attributes": {},
+          "children": [
+            {
+              "name": "complex.ts",
+              "type": "File",
+              "attributes": {
+                "rloc": 51,
+                "sonar_complexity": 22
+              },
+              "children": []
+            },
+            {
+              "name": "simple.ts",
+              "type": "File",
+              "attributes": {
+                "rloc": 8,
+                "sonar_complexity": 2
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [],
+  "attributeTypes": {
+    "nodes": {
+      "rloc": "absolute",
+      "sonar_complexity": "absolute"
+    },
+    "edges": {}
+  }
+}

@@ -12,6 +12,7 @@ export interface SonarConfig {
   networkName: string;
   containerName: string;
   timeoutPeriod: number;
+  outputFile: string;
 }
 
 export interface DockerConfig {

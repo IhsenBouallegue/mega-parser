@@ -1,0 +1,19 @@
+{
+  "name": "mega-parser-perf",
+  "version": "1.0.0",
+  "description": "Performance comparison between mega-parser and sonar-analysis",
+  "type": "module",
+  "scripts": {
+    "start": "bun compare.ts",
+    "clean": "rm -rf mega-parser-output sonar-output"
+  },
+  "dependencies": {
+    "automated-sonar-analysis": "workspace:*",
+    "chalk": "^5.4.1",
+    "cli": "workspace:*",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

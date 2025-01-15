@@ -1,7 +1,7 @@
 import type { IMetricPlugin } from "@/types";
 import { Language } from "@/types/enums";
 
-export class RealLinesOfCodePlugin implements IMetricPlugin {
+export class RealLinesOfCodePlugin implements IMetricPlugin<unknown> {
   name = "rloc";
   supportedLanguages = [
     Language.Java,
@@ -18,6 +18,10 @@ export class RealLinesOfCodePlugin implements IMetricPlugin {
     // Language.Text,
     // Language.Unknown, // Support unknown text files too
   ];
+
+  getDebugInfo(): unknown {
+    return undefined;
+  }
 
   calculate(content: string, language: Language): number {
     // Special handling for JSON to count actual content lines

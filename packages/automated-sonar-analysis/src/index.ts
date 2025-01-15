@@ -21,6 +21,7 @@ const DEFAULT_CONFIG: SonarConfig = {
   networkName: "sonarnet",
   containerName: "sonarqube",
   timeoutPeriod: 120000,
+  outputFile: "sonar.cc.json",
 };
 
 const program = new Command();
@@ -35,6 +36,7 @@ program
   .option("-d, --directory <path>", "Directory containing the project to be scanned")
   .option("-u, --url <url>", "SonarQube host URL")
   .option("-t, --token-name <name>", "SonarQube token name")
+  .option("-f, --output-file <file>", "Output file for CodeCharta analysis")
   .option("-s, --skip-prompts", "Skip all prompts and use default values")
   .option("-h, --help", "Show help message");
 
@@ -64,6 +66,12 @@ async function promptForConfig(config: SonarConfig): Promise<boolean> {
         name: "projectBaseDir",
         message: "📁 Enter the directory path to be scanned:",
         initial: config.projectBaseDir,
+      },
+      {
+        type: "text",
+        name: "outputFile",
+        message: "📄 Enter the output file path for CodeCharta analysis:",
+        initial: config.outputFile,
       },
     ],
     {

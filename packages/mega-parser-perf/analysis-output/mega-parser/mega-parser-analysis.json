@@ -1,0 +1,283 @@
+[
+  {
+    "path": "kotlin/complex.kt",
+    "name": "complex.kt",
+    "language": "kotlin",
+    "content": "data class Node<T>(var value: T, var next: Node<T>? = null)\n\nclass LinkedList<T> {\n    private var head: Node<T>? = null\n\n    fun insert(value: T) {\n        val newNode = Node(value)\n        if (head == null) {\n            head = newNode\n            return\n        }\n\n        var current = head\n        while (current?.next != null) {\n            current = current.next\n        }\n        current?.next = newNode\n    }\n\n    fun find(value: T): Node<T>? {\n        var current = head\n        while (current != null) {\n            if (current.value == value) {\n                return current\n            }\n            current = current.next\n        }\n        return null\n    }\n\n    fun delete(value: T): Boolean {\n        if (head == null) return false\n\n        if (head?.value == value) {\n            head = head?.next\n            return true\n        }\n\n        var current = head\n        while (current?.next != null) {\n            if (current.next?.value == value) {\n                current.next = current.next?.next\n                return true\n            }\n            current = current.next\n        }\n        return false\n    }\n}\n\nfun main() {\n    val list = LinkedList<Int>()\n    list.insert(1)\n    list.insert(2)\n    list.insert(3)\n    println(list.find(2))\n    list.delete(2)\n} ",
+    "metrics": {
+      "rloc": 50,
+      "sonar_complexity": 18
+    },
+    "debugInfo": [
+      null,
+      {
+        "patterns": [
+          {
+            "category": "Functions",
+            "name": "Function",
+            "regex": "\\bfun\\s+[\\w_]+\\s*\\([^)]*\\)(?:\\s*:\\s*[\\w<>\\[\\]]+)?\\s*\\{",
+            "matches": [
+              "fun insert(value: T) {",
+              "fun delete(value: T): Boolean {",
+              "fun main() {"
+            ],
+            "lines": [
+              6,
+              31,
+              51
+            ],
+            "count": 3
+          },
+          {
+            "category": "Control Flow",
+            "name": "If",
+            "regex": "\\bif\\b(?!\\s*else\\b)",
+            "matches": [
+              "if",
+              "if",
+              "if",
+              "if",
+              "if"
+            ],
+            "lines": [
+              8,
+              23,
+              32,
+              34,
+              41
+            ],
+            "count": 5
+          },
+          {
+            "category": "Control Flow",
+            "name": "While",
+            "regex": "\\bwhile\\b",
+            "matches": [
+              "while",
+              "while",
+              "while"
+            ],
+            "lines": [
+              14,
+              22,
+              40
+            ],
+            "count": 3
+          },
+          {
+            "category": "Kotlin Specific",
+            "name": "Null Safety Chain",
+            "regex": "\\w+(?:\\?\\.[\\w.]+)+(?:\\.(?:let|also|run|apply|with)\\s*\\{[^}]*})?",
+            "matches": [
+              "current?.next",
+              "current?.next",
+              "head?.value",
+              "head?.next",
+              "current?.next",
+              "next?.value",
+              "next?.next"
+            ],
+            "lines": [
+              14,
+              17,
+              34,
+              35,
+              40,
+              41,
+              42
+            ],
+            "count": 7
+          }
+        ],
+        "totalComplexity": 18,
+        "baseComplexity": 0,
+        "code": "data class Node<T>(var value: T, var next: Node<T>? = null)\n\nclass LinkedList<T> {\n    private var head: Node<T>? = null\n\n    fun insert(value: T) {\n        val newNode = Node(value)\n        if (head == null) {\n            head = newNode\n            return\n        }\n\n        var current = head\n        while (current?.next != null) {\n            current = current.next\n        }\n        current?.next = newNode\n    }\n\n    fun find(value: T): Node<T>? {\n        var current = head\n        while (current != null) {\n            if (current.value == value) {\n                return current\n            }\n            current = current.next\n        }\n        return null\n    }\n\n    fun delete(value: T): Boolean {\n        if (head == null) return false\n\n        if (head?.value == value) {\n            head = head?.next\n            return true\n        }\n\n        var current = head\n        while (current?.next != null) {\n            if (current.next?.value == value) {\n                current.next = current.next?.next\n                return true\n            }\n            current = current.next\n        }\n        return false\n    }\n}\n\nfun main() {\n    val list = LinkedList<Int>()\n    list.insert(1)\n    list.insert(2)\n    list.insert(3)\n    println(list.find(2))\n    list.delete(2)\n} ",
+        "language": "kotlin"
+      }
+    ]
+  },
+  {
+    "path": "kotlin/simple.kt",
+    "name": "simple.kt",
+    "language": "kotlin",
+    "content": "fun add(a: Int, b: Int): Int {\n    return a + b\n}\n\nfun multiply(a: Int, b: Int): Int {\n    return a * b\n}\n\nfun main() {\n    println(add(2, 3))\n    println(multiply(4, 5))\n} ",
+    "metrics": {
+      "rloc": 10,
+      "sonar_complexity": 3
+    },
+    "debugInfo": [
+      null,
+      {
+        "patterns": [
+          {
+            "category": "Functions",
+            "name": "Function",
+            "regex": "\\bfun\\s+[\\w_]+\\s*\\([^)]*\\)(?:\\s*:\\s*[\\w<>\\[\\]]+)?\\s*\\{",
+            "matches": [
+              "fun add(a: Int, b: Int): Int {",
+              "fun multiply(a: Int, b: Int): Int {",
+              "fun main() {"
+            ],
+            "lines": [
+              1,
+              5,
+              9
+            ],
+            "count": 3
+          }
+        ],
+        "totalComplexity": 3,
+        "baseComplexity": 0,
+        "code": "fun add(a: Int, b: Int): Int {\n    return a + b\n}\n\nfun multiply(a: Int, b: Int): Int {\n    return a * b\n}\n\nfun main() {\n    println(add(2, 3))\n    println(multiply(4, 5))\n} ",
+        "language": "kotlin"
+      }
+    ]
+  },
+  {
+    "path": "sonar-project.properties",
+    "name": "sonar-project.properties",
+    "language": "unknown",
+    "content": "sonar.projectKey=mega_parser_perf\nsonar.projectName=Mega Parser Performance Tests\nsonar.projectVersion=1.0\n\n# Path is relative to the sonar-project.properties file\nsonar.sources=.\n\n# Language-specific configurations\nsonar.typescript.file.suffixes=.ts\nsonar.kotlin.file.suffixes=.kt\n\n# Encoding of the source code\nsonar.sourceEncoding=UTF-8\n\n# Analysis settings\nsonar.verbose=true\nsonar.log.level=DEBUG\n\n# Exclude patterns\nsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.test.*\n\n# Host URL (if not default)\nsonar.host.url=http://localhost:9000 ",
+    "metrics": {}
+  },
+  {
+    "path": "typescript/complex.ts",
+    "name": "complex.ts",
+    "language": "typescript",
+    "content": "interface Node<T> {\n  value: T;\n  next: Node<T> | null;\n}\n\nclass LinkedList<T> {\n  private head: Node<T> | null = null;\n\n  insert(value: T): void {\n    const newNode: Node<T> = { value, next: null };\n    if (!this.head) {\n      this.head = newNode;\n      return;\n    }\n\n    let current = this.head;\n    while (current.next) {\n      current = current.next;\n    }\n    current.next = newNode;\n  }\n\n  find(value: T): Node<T> | null {\n    let current = this.head;\n    while (current) {\n      if (current.value === value) {\n        return current;\n      }\n      current = current.next;\n    }\n    return null;\n  }\n\n  delete(value: T): boolean {\n    if (!this.head) return false;\n\n    if (this.head.value === value) {\n      this.head = this.head.next;\n      return true;\n    }\n\n    let current = this.head;\n    while (current.next) {\n      if (current.next.value === value) {\n        current.next = current.next.next;\n        return true;\n      }\n      current = current.next;\n    }\n    return false;\n  }\n}\n\nconst list = new LinkedList<number>();\nlist.insert(1);\nlist.insert(2);\nlist.insert(3);\nconsole.log(list.find(2));\nlist.delete(2);\n",
+    "metrics": {
+      "rloc": 51,
+      "sonar_complexity": 22
+    },
+    "debugInfo": [
+      null,
+      {
+        "patterns": [
+          {
+            "category": "Functions",
+            "name": "Function",
+            "regex": "(?:function\\s+[\\w_]+|[\\w_]+\\s*=\\s*function|[\\w_]+\\s*=\\s*\\([^)]*\\)\\s*=>|[\\w_]+\\s*\\([^)]*\\)\\s*\\{)\\s*",
+            "matches": [
+              "if (!this.head) {\n      ",
+              "while (current.next) {\n      ",
+              "while (current) {\n      ",
+              "if (current.value === value) {\n        ",
+              "if (this.head.value === value) {\n      ",
+              "while (current.next) {\n      ",
+              "if (current.next.value === value) {\n        "
+            ],
+            "lines": [
+              11,
+              17,
+              25,
+              26,
+              37,
+              43,
+              44
+            ],
+            "count": 7
+          },
+          {
+            "category": "Functions",
+            "name": "Method",
+            "regex": "(?:public|private|protected|static|\\s)*[\\w_]+\\s*\\([^)]*\\)\\s*\\{",
+            "matches": [
+              "\n    if (!this.head) {",
+              "\n    while (current.next) {",
+              "\n    while (current) {",
+              "\n      if (current.value === value) {",
+              "\n\n    if (this.head.value === value) {",
+              "\n    while (current.next) {",
+              "\n      if (current.next.value === value) {"
+            ],
+            "lines": [
+              10,
+              16,
+              24,
+              25,
+              35,
+              42,
+              43
+            ],
+            "count": 7
+          },
+          {
+            "category": "Control Flow",
+            "name": "If",
+            "regex": "\\bif\\b(?!\\s*else\\b)",
+            "matches": [
+              "if",
+              "if",
+              "if",
+              "if",
+              "if"
+            ],
+            "lines": [
+              11,
+              26,
+              35,
+              37,
+              44
+            ],
+            "count": 5
+          },
+          {
+            "category": "Control Flow",
+            "name": "While",
+            "regex": "\\bwhile\\b",
+            "matches": [
+              "while",
+              "while",
+              "while"
+            ],
+            "lines": [
+              17,
+              25,
+              43
+            ],
+            "count": 3
+          }
+        ],
+        "totalComplexity": 22,
+        "baseComplexity": 0,
+        "code": "interface Node<T> {\n  value: T;\n  next: Node<T> | null;\n}\n\nclass LinkedList<T> {\n  private head: Node<T> | null = null;\n\n  insert(value: T): void {\n    const newNode: Node<T> = { value, next: null };\n    if (!this.head) {\n      this.head = newNode;\n      return;\n    }\n\n    let current = this.head;\n    while (current.next) {\n      current = current.next;\n    }\n    current.next = newNode;\n  }\n\n  find(value: T): Node<T> | null {\n    let current = this.head;\n    while (current) {\n      if (current.value === value) {\n        return current;\n      }\n      current = current.next;\n    }\n    return null;\n  }\n\n  delete(value: T): boolean {\n    if (!this.head) return false;\n\n    if (this.head.value === value) {\n      this.head = this.head.next;\n      return true;\n    }\n\n    let current = this.head;\n    while (current.next) {\n      if (current.next.value === value) {\n        current.next = current.next.next;\n        return true;\n      }\n      current = current.next;\n    }\n    return false;\n  }\n}\n\nconst list = new LinkedList<number>();\nlist.insert(1);\nlist.insert(2);\nlist.insert(3);\nconsole.log(list.find(2));\nlist.delete(2);\n",
+        "language": "typescript"
+      }
+    ]
+  },
+  {
+    "path": "typescript/simple.ts",
+    "name": "simple.ts",
+    "language": "typescript",
+    "content": "function add(a: number, b: number): number {\n  return a + b;\n}\n\nfunction multiply(a: number, b: number): number {\n  return a * b;\n}\n\nconsole.log(add(2, 3));\nconsole.log(multiply(4, 5));\n",
+    "metrics": {
+      "rloc": 8,
+      "sonar_complexity": 2
+    },
+    "debugInfo": [
+      null,
+      {
+        "patterns": [
+          {
+            "category": "Functions",
+            "name": "Function",
+            "regex": "(?:function\\s+[\\w_]+|[\\w_]+\\s*=\\s*function|[\\w_]+\\s*=\\s*\\([^)]*\\)\\s*=>|[\\w_]+\\s*\\([^)]*\\)\\s*\\{)\\s*",
+            "matches": [
+              "function add",
+              "function multiply"
+            ],
+            "lines": [
+              1,
+              5
+            ],
+            "count": 2
+          }
+        ],
+        "totalComplexity": 2,
+        "baseComplexity": 0,
+        "code": "function add(a: number, b: number): number {\n  return a + b;\n}\n\nfunction multiply(a: number, b: number): number {\n  return a * b;\n}\n\nconsole.log(add(2, 3));\nconsole.log(multiply(4, 5));\n",
+        "language": "typescript"
+      }
+    ]
+  }
+]

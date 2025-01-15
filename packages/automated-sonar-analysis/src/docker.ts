@@ -1,5 +1,7 @@
+import path from "node:path";
 import { $ } from "bun";
 import chalk from "chalk";
+import fs from "fs-extra";
 import prompts from "prompts";
 import type { DockerConfig } from "./types.js";
 
@@ -8,6 +10,14 @@ const REQUIRED_IMAGES = [
   "codecharta/codecharta-analysis",
   "sonarqube:community",
 ] as const;
+
+interface CodeChartaOptions {
+  projectBaseDir: string;
+  projectKey: string;
+  token: string;
+  containerSonarUrl: string;
+  outputFile?: string;
+}
 
 export class DockerManager {
   private config: DockerConfig;
@@ -355,20 +365,14 @@ export class DockerManager {
     }
   }
 
-  async runCodeChartaAnalysis(options: {
-    projectBaseDir: string;
-    projectKey: string;
-    token: string;
-    containerSonarUrl: string;
-  }): Promise<void> {
-    console.log(chalk.blue("📊 Running CodeCharta analysis..."));
-
-    // Convert Windows path to Unix path and ensure proper format
-    const containerPath = options.projectBaseDir.replace(/\\/g, "/");
-    // Remove drive letter and add it as a lowercase prefix
-    const normalizedPath = containerPath.replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
-
+  async runCodeChartaAnalysis(options: CodeChartaOptions): Promise<void> {
     try {
+      console.log(chalk.blue("📊 Running CodeCharta analysis..."));
+
+      // Convert Windows path to Unix format for Docker
+      const containerPath = options.projectBaseDir.replace(/\\/g, "/");
+      const normalizedPath = containerPath.replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);
+
       const result = await $`docker run --rm -it \
         --network "${this.config.networkName}" \
         --name codecharta-analysis \
@@ -377,14 +381,14 @@ export class DockerManager {
         codecharta/codecharta-analysis \
         ccsh sonarimport "${options.containerSonarUrl}" "${options.projectKey}" \
         "--user-token=${options.token}" \
-        "--output-file=${normalizedPath}/sonar.cc.json" \
+        "--output-file=${options.outputFile || "analysis.cc.json"}" \
         "--merge-modules=false"`
         .quiet()
         .nothrow();
 
       // Log output regardless of success/failure
       if (result.stdout.length > 0) console.log(chalk.gray(result.stdout.toString()));
-      if (result.stderr.length > 0) console.error(chalk.red("⚠️ CodeCharta errors:"), result.stderr.toString());
+      if (result.stderr.length > 0) console.error(chalk.yellow("⚠️ CodeCharta warnings:"), result.stderr.toString());
 
       if (result.exitCode !== 0) {
         throw new Error(`CodeCharta analysis failed with exit code ${result.exitCode}`);

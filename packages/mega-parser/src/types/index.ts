@@ -13,10 +13,12 @@ export interface FileObject {
   language: Language;
   content: string;
   metrics: { [metricName: string]: number };
+  debugInfo?: unknown[];
 }
 
-export interface IMetricPlugin {
+export interface IMetricPlugin<DebugInfo> {
   name: string;
   supportedLanguages: Language[];
   calculate(content: string, language: Language, debug?: boolean): number;
+  getDebugInfo(): DebugInfo | undefined;
 }

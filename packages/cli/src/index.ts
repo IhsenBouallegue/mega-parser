@@ -5,7 +5,7 @@ import { Command } from "commander";
 import fs from "fs-extra";
 import ignore, { type Ignore } from "ignore";
 import { ExportPluginEnum, MegaParser, MetricPluginEnum } from "mega-parser";
-import type { FileInput } from "mega-parser";
+import type { ExportOutput, FileInput } from "mega-parser";
 import ora from "ora";
 import prompts from "prompts";
 
@@ -31,7 +31,9 @@ program
     "--exclude <patterns>",
     "Comma-separated list of glob patterns to exclude (e.g., '**/test/**,**/*.test.*')",
     (value) => value.split(","),
-  );
+  )
+  .option("-o, --output <path>", "Base output path for generated files (extensions will be added based on exporter)")
+  .option("-d, --debug", "Enable debug mode for detailed metric calculations");
 
 async function loadGitignoreRules(basePath: string, extraExcludes: string[] = []): Promise<Ignore> {
   const ig = ignore({
@@ -175,6 +177,8 @@ async function run() {
     let selectedMetrics: MetricPluginEnum[];
     let selectedExporters: ExportPluginEnum[];
     let excludePatterns: string[] = [];
+    let outputBasePath: string | undefined = options.output;
+    const debug: boolean = options.debug || false;
     let wasInteractive = false;
 
     // Get input path
@@ -189,6 +193,19 @@ async function run() {
         validate: (value: string) => value.length > 0 || "Path is required",
       });
       inputPath = response.inputPath;
+    }
+
+    // Get output base path if not provided
+    if (!outputBasePath && !options.path) {
+      wasInteractive = true;
+      const response = await prompts({
+        type: "text",
+        name: "outputBasePath",
+        message: "Enter the base path for output files:",
+        initial: "megaparser-output",
+        validate: (value: string) => value.length > 0 || "Output path is required",
+      });
+      outputBasePath = response.outputBasePath;
     }
 
     const normalizedPath = path.resolve(inputPath);
@@ -288,25 +305,38 @@ async function run() {
     megaParser.setMetricPlugins(selectedMetrics);
     megaParser.setExportPlugins(selectedExporters);
 
-    await megaParser.run();
+    await megaParser.run(debug);
     spinner.succeed("Analysis complete");
 
-    // Display results
+    // Display results with debug info if enabled
     console.log(`\n${chalk.bold("Results:")}`);
     for (const file of megaParser.rawOutputData) {
       console.log(chalk.cyan(`\nFile: ${file.path}`));
       console.log("Metrics:");
       for (const [metric, value] of Object.entries(file.metrics)) {
         console.log(`  ${metric}: ${value}`);
+        if (debug && file.debugInfo?.length) {
+          console.log(chalk.gray("  Debug info:"), file.debugInfo);
+        }
       }
     }
 
-    // Save exports
+    // Save exports using plugin's supported extensions
     for (const exporter of selectedExporters) {
-      const output = megaParser.getExportOutput(exporter);
-      if (output) {
-        const filename = `megaparser-${exporter.toLowerCase()}-output.json`;
-        await fs.writeFile(filename, output);
+      const result = megaParser.getExportOutput(exporter);
+      if (result) {
+        // If outputBasePath is provided, use it as base
+        // Otherwise, use default naming in current directory
+        const basePath = outputBasePath || "megaparser-output";
+        const filename = path.join(
+          path.dirname(basePath),
+          `${path.basename(basePath, path.extname(basePath))}.${result.extension}`,
+        );
+
+        // Ensure directory exists
+        await fs.ensureDir(path.dirname(filename));
+
+        await fs.writeFile(filename, result.content);
         console.log(chalk.green(`\nExported ${filename}`));
       }
     }
@@ -322,6 +352,10 @@ async function run() {
 
       if (excludePatterns.length > 0) {
         command.push(`--exclude "${excludePatterns.join(",")}"`);
+      }
+
+      if (outputBasePath) {
+        command.push(`--output "${outputBasePath}"`);
       }
 
       console.log(chalk.yellow("\nTo skip prompts next time, use this command:"));

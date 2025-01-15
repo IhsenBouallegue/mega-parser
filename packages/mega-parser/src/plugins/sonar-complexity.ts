@@ -2,7 +2,7 @@ import type { IMetricPlugin } from "@/types";
 import type { ComplexityDebug, ComplexityPattern } from "@/types/debug";
 import { Language } from "@/types/enums";
 
-export class SonarComplexityPlugin implements IMetricPlugin {
+export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
   name = "sonar_complexity";
   supportedLanguages = [Language.Java, Language.Kotlin, Language.TypeScript];
   debugInfo?: ComplexityDebug;
@@ -21,6 +21,13 @@ export class SonarComplexityPlugin implements IMetricPlugin {
 
   private getJavaPatterns(): { category: string; name: string; regex: string }[] {
     return [
+      // Java Functions
+      {
+        category: "Functions",
+        name: "Method",
+        regex: "(?:public|private|protected|static|\\s)*\\b[\\w<>\\[\\]]+\\s+[\\w_]+\\s*\\([^)]*\\)\\s*\\{",
+      },
+      { category: "Functions", name: "Constructor", regex: "\\b[A-Z][\\w_]*\\s*\\([^)]*\\)\\s*\\{" },
       // Java Control Flow
       { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
       { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
@@ -41,6 +48,13 @@ export class SonarComplexityPlugin implements IMetricPlugin {
 
   private getKotlinPatterns(): { category: string; name: string; regex: string }[] {
     return [
+      // Kotlin Functions
+      {
+        category: "Functions",
+        name: "Function",
+        regex: "\\bfun\\s+[\\w_]+\\s*\\([^)]*\\)(?:\\s*:\\s*[\\w<>\\[\\]]+)?\\s*\\{",
+      },
+      { category: "Functions", name: "Constructor", regex: "\\bconstructor\\s*\\([^)]*\\)\\s*\\{" },
       // Kotlin Control Flow
       { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
       { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
@@ -77,6 +91,18 @@ export class SonarComplexityPlugin implements IMetricPlugin {
 
   private getTypeScriptPatterns(): { category: string; name: string; regex: string }[] {
     return [
+      // TypeScript Functions
+      {
+        category: "Functions",
+        name: "Function",
+        regex:
+          "(?:function\\s+[\\w_]+|[\\w_]+\\s*=\\s*function|[\\w_]+\\s*=\\s*\\([^)]*\\)\\s*=>|[\\w_]+\\s*\\([^)]*\\)\\s*\\{)\\s*",
+      },
+      {
+        category: "Functions",
+        name: "Method",
+        regex: "(?:public|private|protected|static|\\s)*[\\w_]+\\s*\\([^)]*\\)\\s*\\{",
+      },
       // TypeScript Control Flow
       { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
       { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
@@ -177,7 +203,7 @@ export class SonarComplexityPlugin implements IMetricPlugin {
       }
     }
 
-    const complexity = 1 + patterns.reduce((sum, p) => sum + p.count, 0);
+    const complexity = patterns.reduce((sum, p) => sum + p.count, 0);
 
     if (!debug) {
       return { complexity };
@@ -188,7 +214,6 @@ export class SonarComplexityPlugin implements IMetricPlugin {
       debug: {
         patterns,
         totalComplexity: complexity,
-        baseComplexity: 1,
         code: cleanCode,
         language: language.toLowerCase(),
       },
