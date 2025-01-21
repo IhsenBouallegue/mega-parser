@@ -48,32 +48,62 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
 
   private getKotlinPatterns(): { category: string; name: string; regex: string }[] {
     return [
-      // Kotlin Functions
+      // ============================
+      // Kotlin Functions with bodies
+      // ============================
       {
         category: "Functions",
         name: "Function",
-        regex: "\\bfun\\s+[\\w_]+\\s*\\([^)]*\\)(?:\\s*:\\s*[\\w<>\\[\\]]+)?\\s*\\{",
+        regex:
+          // ^[ \t]*fun ... {  (requires a body)
+          // Optional generics <T>
+          // Optional extension receiver: e.g. String., MyClass<T>.
+          // Function name + param list (...)
+          // Optional return type that can include ?, e.g. : Node<T>?
+          // Then an opening curly {
+          "^[ \t]*fun\\s*" +
+          "(?:<[^>]+>\\s*)?" + // optional generic: fun <T>
+          "(?:[A-Za-z0-9_<>.:?]+\\.)?" + // optional extension receiver: String., MyClass<T>., etc.
+          "[A-Za-z0-9_]+" + // function name
+          "\\s*\\([^)]*\\)" + // parameter list (...)
+          "(?:\\s*:\\s*[\\w<>\\[\\]\\?]+)?" + // optional return type, allowing '?' for e.g. Node<T>?
+          "\\s*\\{", // opening curly brace
       },
-      { category: "Functions", name: "Constructor", regex: "\\bconstructor\\s*\\([^)]*\\)\\s*\\{" },
+
+      // ============================
       // Kotlin Control Flow
+      // ============================
       { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
       { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
-      { category: "Control Flow", name: "For", regex: "\\bfor\\b(?=\\s*\\([^)]*\\)|\\s+in\\b)" },
+      {
+        category: "Control Flow",
+        name: "For",
+        regex: "\\bfor\\b(?=\\s*\\([^)]*\\)|\\s+in\\b)",
+      },
       { category: "Control Flow", name: "While", regex: "\\bwhile\\b" },
       { category: "Control Flow", name: "Catch", regex: "\\bcatch\\b" },
       { category: "Control Flow", name: "Throw", regex: "\\bthrow\\b" },
+
+      // ============================
       // Kotlin Operators
+      // ============================
       { category: "Operators", name: "AND", regex: "&&(?!\\s*\\{)" },
       { category: "Operators", name: "OR", regex: "\\|\\|(?!\\s*\\{)" },
+
+      // ============================
       // Kotlin Specific
+      // ============================
       { category: "Kotlin Specific", name: "When", regex: "\\bwhen\\s*\\([^)]*\\)\\s*\\{" },
-      // Null Safety Chain (includes safe calls with scope functions)
-      {
-        category: "Kotlin Specific",
-        name: "Null Safety Chain",
-        regex: "\\w+(?:\\?\\.[\\w.]+)+(?:\\.(?:let|also|run|apply|with)\\s*\\{[^}]*})?",
-      },
-      // Scope Functions (only match when not part of safe call chain)
+
+      // ----------------------------
+      // In sonar cognitive complexity null safety chain is not counted as complexity
+      // {
+      //   category: "Kotlin Specific",
+      //   name: "Null Safety Chain",
+      //   regex: "\\w+(?:\\?\\.[\\w.]+)+(?:\\.(?:let|also|run|apply|with)\\s*\\{[^}]*})?",
+      // },
+      // ----------------------------
+
       {
         category: "Kotlin Specific",
         name: "Scope Functions",
@@ -91,18 +121,58 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
 
   private getTypeScriptPatterns(): { category: string; name: string; regex: string }[] {
     return [
-      // TypeScript Functions
       {
+        // 1) Named Function Declarations: e.g. "function foo() { ... }"
         category: "Functions",
-        name: "Function",
+        name: "Named Function Declarations",
         regex:
-          "(?:function\\s+[\\w_]+|[\\w_]+\\s*=\\s*function|[\\w_]+\\s*=\\s*\\([^)]*\\)\\s*=>|[\\w_]+\\s*\\([^)]*\\)\\s*\\{)\\s*",
+          // Start-of-line + optional spaces
+          // + "function" + space
+          // + disallow certain keywords
+          // + valid JS/TS identifier
+          // + param list (...)
+          // + optional return type `: SomeType`
+          // + opening curly
+          "^[ \t]*function\\s+(?!if|for|while|switch|catch|do)" +
+          "[A-Za-z_$][A-Za-z0-9_$]*\\s*\\([^)]*\\)" +
+          "(?:\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$<>,|\\[\\]?]*)?" + // optional return type
+          "\\s*\\{",
       },
       {
+        // 2) Class/Object Methods: e.g. "public foo(): void { ... }", "foo(): number { ... }"
         category: "Functions",
-        name: "Method",
-        regex: "(?:public|private|protected|static|\\s)*[\\w_]+\\s*\\([^)]*\\)\\s*\\{",
+        name: "Class/Object Methods",
+        regex:
+          // Start-of-line + optional spaces
+          // + optional TS modifiers (public|private|protected|static|abstract|readonly|async)
+          // + disallow keywords as method name (if|for|while|...)
+          // + valid identifier + optional generics
+          // + param list (...)
+          // + optional return/type annotation `: SomeType`
+          // + opening curly
+          "^[ \t]*(?:(?:public|private|protected|static|abstract|readonly|async)\\s+)*" +
+          "(?!if|for|while|switch|catch|do)" +
+          "[A-Za-z_$][A-Za-z0-9_$]*(?:<[^>]*>)?\\s*\\([^)]*\\)" +
+          "(?:\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$<>,|\\[\\]? ]*)?" +
+          "\\s*\\{",
       },
+      {
+        // 3) Arrow Functions (Block Body): e.g. "const foo = (x) => { ... }"
+        category: "Functions",
+        name: "Arrow Functions",
+        regex:
+          // Start-of-line + optional spaces
+          // + (const|let|var)
+          // + variable name disallowing keywords
+          // + optional async
+          // + param list or single param
+          // + => + { (block)
+          "^[ \t]*(?:const|let|var)\\s+(?!if|for|while|switch|catch|do)" +
+          "[A-Za-z_$][A-Za-z0-9_$]*\\s*=\\s*" +
+          "(?:async\\s+)?" +
+          "(?:\\([^)]*\\)|[A-Za-z_$][A-Za-z0-9_$]*)\\s*=>\\s*\\{",
+      },
+
       // TypeScript Control Flow
       { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
       { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
@@ -113,21 +183,19 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
       { category: "Control Flow", name: "Catch", regex: "\\bcatch\\b" },
       { category: "Control Flow", name: "Throw", regex: "\\bthrow\\b" },
       { category: "Control Flow", name: "Switch", regex: "\\bswitch\\b" },
-      { category: "Control Flow", name: "Case", regex: "\\bcase\\b(?!\\s*:.*\\bcase\\b)" },
+      {
+        category: "Control Flow",
+        name: "Case",
+        regex: "\\bcase\\b(?!\\s*:.*\\bcase\\b)",
+      },
 
       // TypeScript Operators
       { category: "Operators", name: "AND", regex: "&&(?!\\s*\\{)" },
       { category: "Operators", name: "OR", regex: "\\|\\|(?!\\s*\\{)" },
       { category: "Operators", name: "Nullish", regex: "\\?\\?(?!\\s*\\{)" },
-      // Don't match:
-      // - Type annotations (?:)
-      // - Optional properties (?<identifier>)
-      // - Optional chaining (?.)
-      // - Type unions (string | number)
       {
         category: "Operators",
         name: "Ternary",
-        // Only match ternary that's followed by an expression, not type annotations
         regex: "\\?(?=\\s*[\\w'\"`\\(\\[{]|\\s*(?:true|false|null))(?![.:])",
       },
 
@@ -141,21 +209,6 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
         category: "TypeScript Specific",
         name: "Type Guard",
         regex: "\\bis\\s+[A-Z]\\w*\\b",
-      },
-      {
-        category: "TypeScript Specific",
-        name: "Arrow Function",
-        regex: "(?<!\\b(?:case|return|throw|yield|await)\\s*)=>(?!\\s*[{,])",
-      },
-      {
-        category: "TypeScript Specific",
-        name: "Generator",
-        regex: "\\bfunction\\s*\\*",
-      },
-      {
-        category: "TypeScript Specific",
-        name: "Async Function",
-        regex: "\\basync\\s+(?:function|\\()",
       },
     ];
   }
@@ -180,9 +233,9 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
           ? this.getTypeScriptPatterns()
           : this.getKotlinPatterns();
 
-    // Process each pattern
+    // Process each pattern in MULTILINE mode ("gm")
     for (const { category, name, regex } of languagePatterns) {
-      const { matches, lines } = findAllMatches(cleanCode, new RegExp(regex, "g"));
+      const { matches, lines } = findAllMatches(cleanCode, new RegExp(regex, "gm"));
       if (matches.length > 0) {
         patterns.push({
           category,
@@ -195,7 +248,7 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
       }
     }
 
-    // Add when branch complexity for Kotlin
+    // Add 'when' branch complexity for Kotlin
     if (language === Language.Kotlin) {
       const whenBranches = this.countWhenBranches(cleanCode);
       if (whenBranches.count > 0) {
@@ -230,10 +283,7 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
       const blockStart = code.indexOf(block);
       if (blockStart === -1) continue;
 
-      // Match only valid when branches:
-      // - else ->
-      // - is Type ->
-      // - literal/identifier ->
+      // Match valid when branches: else ->, is Type ->, or literal ->
       const branchPattern = /(?:(?:else)|(?:is\s+\w+)|(?:\d+|"[^"]*"|'[^']*'|\w+(?:\([^)]*\))?))[ \t]*->/g;
       const branches = block.match(branchPattern);
       if (branches && branches.length > 0) {
@@ -255,6 +305,7 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
   }
 }
 
+// Helpers
 function findAllMatches(code: string, pattern: RegExp): { matches: string[]; lines: number[] } {
   const matches: string[] = [];
   const lines: number[] = [];
@@ -311,7 +362,7 @@ function removeTypeScriptCommentsAndStrings(code: string): string {
     /\/\/.*$/gm, // Single-line comments
     /\/\*[\s\S]*?\*\//g, // Multi-line comments
     /"(?:[^"\\]|\\.)*"/g, // Double-quoted strings
-    /'(?:[^"\\]|\\.)*'/g, // Single-quoted strings
+    /'(?:[^'\\]|\\.)*'/g, // Single-quoted strings
     /`(?:[^`\\]|\\.)*`/g, // Template literals
     /\/(?:[^/\\]|\\.)*\/[gimuy]*/g, // Regular expressions
   ];

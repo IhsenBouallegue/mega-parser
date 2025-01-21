@@ -17,7 +17,7 @@
               "type": "File",
               "attributes": {
                 "rloc": 50,
-                "sonar_complexity": 18
+                "sonar_complexity": 12
               },
               "children": []
             },
@@ -48,7 +48,7 @@
               "type": "File",
               "attributes": {
                 "rloc": 51,
-                "sonar_complexity": 22
+                "sonar_complexity": 11
               },
               "children": []
             },

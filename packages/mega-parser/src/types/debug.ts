@@ -10,7 +10,6 @@ export interface ComplexityPattern {
 export interface ComplexityDebug {
   patterns: ComplexityPattern[];
   totalComplexity: number;
-  baseComplexity: number;
   code: string;
   language: string;
 }
