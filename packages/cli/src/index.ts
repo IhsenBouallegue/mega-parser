@@ -178,7 +178,7 @@ async function run() {
     let selectedExporters: ExportPluginEnum[];
     let excludePatterns: string[] = [];
     let outputBasePath: string | undefined = options.output;
-    const debug: boolean = options.debug || false;
+    let debug: boolean = options.debug || false;
     let wasInteractive = false;
 
     // Get input path
@@ -186,13 +186,22 @@ async function run() {
       inputPath = options.path;
     } else {
       wasInteractive = true;
-      const response = await prompts({
-        type: "text",
-        name: "inputPath",
-        message: "Enter the path to file or directory to analyze:",
-        validate: (value: string) => value.length > 0 || "Path is required",
-      });
+      const response = await prompts([
+        {
+          type: "text",
+          name: "inputPath",
+          message: "Enter the path to file or directory to analyze:",
+          validate: (value: string) => value.length > 0 || "Path is required",
+        },
+        {
+          type: "confirm",
+          name: "debug",
+          message: "Enable debug mode for detailed metric calculations?",
+          initial: false,
+        },
+      ]);
       inputPath = response.inputPath;
+      debug = response.debug;
     }
 
     // Get output base path if not provided

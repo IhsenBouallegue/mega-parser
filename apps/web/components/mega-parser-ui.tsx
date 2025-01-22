@@ -3,14 +3,25 @@
 import { Button } from "@/components/ui/button";
 import ignore from "ignore";
 import { Loader2, Play } from "lucide-react";
-import { ExportPluginEnum, type FileInput, type FileObject, Language, MegaParser, MetricPluginEnum } from "mega-parser";
+import {
+  ExportOutput,
+  ExportPluginEnum,
+  type FileInput,
+  type FileObject,
+  Language,
+  MegaParser,
+  MetricPluginEnum,
+} from "mega-parser";
 import { useState } from "react";
+import { DebugViewer } from "./debug-viewer";
 import { ExporterSelector } from "./exporter-selector";
 import { FileFilterOptions } from "./file-filter-options";
 import { FileSelector } from "./file-selector";
 import { MetricsSelector } from "./metrics-selector";
 import { OutputViewer } from "./output-viewer";
 import { StatsRibbon } from "./stats-ribbon";
+import { Switch } from "./ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 interface FileStats {
   totalFiles: number;
@@ -60,14 +71,28 @@ export default function MegaParserUI() {
   const [excludePatterns, setExcludePatterns] = useState("");
   const [ignoreRules, setIgnoreRules] = useState<string[]>([]);
   const [fileStats, setFileStats] = useState<FileStats | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
+  const [showStats, setShowStats] = useState(true);
+  const [activeTab, setActiveTab] = useState<"output" | "debug">("output");
 
   const handleFileChange = (selectedFiles: FileList | null) => {
+    console.log("🔄 handleFileChange called", {
+      hasFiles: !!selectedFiles,
+      fileCount: selectedFiles?.length,
+      showStats,
+    });
+
     setFiles(selectedFiles);
-    if (selectedFiles) {
+    console.log("✅ Files state updated");
+
+    if (selectedFiles && showStats) {
+      console.log("📊 Starting file stats update...");
       updateFileStats(selectedFiles);
     } else {
+      console.log("❌ Skipping file stats update");
       setFileStats(null);
     }
+    console.log("🏁 handleFileChange completed");
   };
 
   const handleMetricChange = (metric: MetricPluginEnum) => {
@@ -228,35 +253,71 @@ export default function MegaParserUI() {
   const runMegaParser = async () => {
     if (!files) return;
 
+    console.log("🔍 Starting MegaParser run...");
     setIsProcessing(true);
     setError(null);
+    setOutput(undefined);
+    setExportOutputs({} as Record<ExportPluginEnum, string>);
 
     try {
-      const requestedMetrics = Object.keys(metrics).filter(
-        (metric) => metrics[metric as MetricPluginEnum],
-      ) as MetricPluginEnum[];
+      console.log("📁 Converting files to FileInput format...");
+      const fileInputs = await Promise.all(
+        Array.from(files).map(async (file) => {
+          console.log(`📄 Processing file: ${file.name} (${file.size} bytes)`);
+          try {
+            const content = await file.text();
+            console.log(`✅ Successfully read content for: ${file.name}`);
+            return {
+              path: file.name,
+              name: file.name,
+              size: file.size,
+              content,
+            };
+          } catch (err) {
+            console.error(`❌ Error reading file ${file.name}:`, err);
+            throw err;
+          }
+        }),
+      );
 
-      const filteredFiles = await filterFiles(files);
-      if (filteredFiles.length === 0) {
-        throw new Error("No files to analyze after applying filters");
-      }
+      console.log("🔧 Initializing MegaParser...");
+      const parser = new MegaParser(fileInputs);
 
-      const megaParser = new MegaParser(filteredFiles);
-      megaParser.setMetricPlugins(requestedMetrics);
-      megaParser.setExportPlugins(exporters);
+      console.log("⚙️ Setting up metrics:", metrics);
+      parser.setMetricPlugins(
+        Object.keys(metrics).filter((metric) => metrics[metric as MetricPluginEnum]) as MetricPluginEnum[],
+      );
 
-      await megaParser.run();
+      console.log("📤 Setting up exporters:", exporters);
+      parser.setExportPlugins(exporters);
 
-      const rawData = megaParser.rawOutputData;
-      const exportOutputsMap = megaParser.getAllExportOutputs();
+      console.log("🚀 Running parser...");
+      await parser.run(debugMode);
+      console.log("✅ Parser run complete");
 
+      const rawData = parser.rawOutputData;
+      const exportOutputsMap = parser.getAllExportOutputs();
+
+      console.log("💾 Setting output data...");
       setOutput(rawData);
-      setExportOutputs(Object.fromEntries(exportOutputsMap) as Record<ExportPluginEnum, string>);
+
+      const stringExportOutputs = Object.entries(exportOutputsMap).reduce<Record<ExportPluginEnum, string>>(
+        (acc, [key, value]) => {
+          acc[key as ExportPluginEnum] = value.content;
+          return acc;
+        },
+        {} as Record<ExportPluginEnum, string>,
+      );
+
+      console.log("💾 Setting export outputs...");
+      setExportOutputs(stringExportOutputs);
+      console.log("✨ MegaParser run completed successfully");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred while processing files");
-      console.error("MegaParser error:", err);
+      console.error("❌ MegaParser error:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setIsProcessing(false);
+      console.log("🏁 MegaParser process finished");
     }
   };
 
@@ -289,13 +350,43 @@ export default function MegaParserUI() {
     URL.revokeObjectURL(url);
   };
 
+  const handleAnalysisFileUpload = async (file: File) => {
+    try {
+      const content = await file.text();
+      const analysisData = JSON.parse(content);
+
+      // More detailed validation with specific error messages
+      if (!Array.isArray(analysisData)) {
+        throw new Error("Analysis file must contain an array of results");
+      }
+      if (analysisData.length === 0) {
+        throw new Error("Analysis file contains no results");
+      }
+      if (!analysisData[0].metrics) {
+        throw new Error("Analysis file is missing metrics data");
+      }
+      // Check if any file has debug info
+      const hasDebugInfo = analysisData.some((file) => file.debugInfo && Array.isArray(file.debugInfo));
+      if (!hasDebugInfo) {
+        throw new Error("Analysis file is missing debug information");
+      }
+
+      setOutput(analysisData);
+      setDebugMode(true);
+      setActiveTab("debug");
+      setError(null); // Clear any existing errors
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to parse analysis file");
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="flex-1 p-4 overflow-auto">
         <h1 className="text-3xl font-bold mb-8">MegaParser Dashboard</h1>
-        <StatsRibbon stats={fileStats} />
+        {showStats && <StatsRibbon stats={fileStats} />}
         <div className="space-y-8">
-          <FileSelector onFileChange={handleFileChange} />
+          <FileSelector onFileChange={handleFileChange} onAnalysisFileUpload={handleAnalysisFileUpload} error={error} />
           <FileFilterOptions
             useGitignore={useGitignore}
             onUseGitignoreChange={setUseGitignore}
@@ -305,6 +396,31 @@ export default function MegaParserUI() {
           />
           <MetricsSelector metrics={metrics} onMetricChange={handleMetricChange} />
           <ExporterSelector exporters={exporters} onExporterChange={handleExporterChange} />
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
+              <label htmlFor="debug-mode" className="text-sm font-medium">
+                Debug Mode
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-stats"
+                checked={showStats}
+                onCheckedChange={(checked) => {
+                  setShowStats(checked);
+                  if (checked && files) {
+                    updateFileStats(files);
+                  } else {
+                    setFileStats(null);
+                  }
+                }}
+              />
+              <label htmlFor="show-stats" className="text-sm font-medium">
+                Show Statistics
+              </label>
+            </div>
+          </div>
           <Button onClick={runMegaParser} disabled={!files || exporters.length === 0 || isProcessing}>
             {isProcessing ? (
               <>
@@ -318,20 +434,38 @@ export default function MegaParserUI() {
               </>
             )}
           </Button>
+          {error && <div className="bg-destructive/15 text-destructive px-4 py-2 rounded-md text-sm">{error}</div>}
         </div>
       </div>
 
       <div className="w-1/2 bg-muted p-4 flex flex-col">
         <h2 className="text-2xl font-semibold mb-4">Output Preview</h2>
-        <OutputViewer
-          rawOutput={output}
-          exportOutputs={exportOutputs}
-          exporters={exporters}
-          onExportDownload={handleExportDownload}
-        />
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "output" | "debug")}>
+          <TabsList>
+            <TabsTrigger value="output">Output</TabsTrigger>
+            <TabsTrigger value="debug" disabled={!debugMode}>
+              Debug
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="output" className="flex-1">
+            <OutputViewer
+              rawOutput={output}
+              exportOutputs={exportOutputs}
+              exporters={exporters}
+              onExportDownload={handleExportDownload}
+            />
+          </TabsContent>
+          <TabsContent value="debug" className="flex-1 h-[calc(100vh-12rem)]">
+            {output && debugMode ? (
+              <DebugViewer files={output} />
+            ) : (
+              <div className="text-center text-muted-foreground p-4">
+                Enable debug mode and run analysis to see debug information
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-md">{error}</div>}
     </div>
   );
 }

@@ -63,7 +63,19 @@ export function OutputViewer({ rawOutput, exportOutputs, exporters, onExportDown
           <div className="mb-4 p-4 bg-muted rounded-md">
             <h3 className="text-lg font-semibold mb-4">{exporter} Output</h3>
             <ScrollArea className="flex flex-grow min-h-1 h-[80vh] rounded-lg border-2">
-              <JsonView data={JSON.parse(exportOutputs[exporter])} />
+              {exportOutputs[exporter] ? (
+                <JsonView
+                  data={(() => {
+                    try {
+                      return JSON.parse(exportOutputs[exporter]);
+                    } catch (e) {
+                      return { error: "Invalid JSON output", content: exportOutputs[exporter] };
+                    }
+                  })()}
+                />
+              ) : (
+                <div className="p-4 text-muted-foreground">No output available for {exporter}</div>
+              )}
             </ScrollArea>
           </div>
         </TabsContent>
