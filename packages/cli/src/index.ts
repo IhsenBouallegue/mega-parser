@@ -334,19 +334,31 @@ async function run() {
     for (const exporter of selectedExporters) {
       const result = megaParser.getExportOutput(exporter);
       if (result) {
-        // If outputBasePath is provided, use it as base
-        // Otherwise, use default naming in current directory
-        const basePath = outputBasePath || "megaparser-output";
-        const filename = path.join(
-          path.dirname(basePath),
-          `${path.basename(basePath, path.extname(basePath))}.${result.extension}`,
-        );
+        try {
+          // If outputBasePath is provided, use it as base
+          // Otherwise, use default naming in current directory
+          const basePath = outputBasePath || "megaparser-output";
 
-        // Ensure directory exists
-        await fs.ensureDir(path.dirname(filename));
+          // Determine if this is a full path or just a filename
+          const outputDir = path.dirname(basePath);
+          const baseFilename = path.basename(basePath, path.extname(basePath));
 
-        await fs.writeFile(filename, result.content);
-        console.log(chalk.green(`\nExported ${filename}`));
+          // Create the output filename with appropriate extension
+          const filename =
+            outputDir === "."
+              ? `${baseFilename}.${result.extension}` // Just filename in current dir
+              : path.join(outputDir, `${baseFilename}.${result.extension}`); // Full path
+
+          // Ensure directory exists if it's not the current directory
+          if (outputDir !== ".") {
+            await fs.ensureDir(outputDir);
+          }
+
+          await fs.writeFile(filename, result.content);
+          console.log(chalk.green(`\nExported ${filename}`));
+        } catch (error) {
+          console.error(chalk.red(`Error saving export for ${exporter}:`), error);
+        }
       }
     }
 
