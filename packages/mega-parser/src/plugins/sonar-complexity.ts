@@ -122,21 +122,29 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
   private getTypeScriptPatterns(): { category: string; name: string; regex: string }[] {
     return [
       {
-        // 1) Named Function Declarations: e.g. "function foo() { ... }"
+        // 1) Named Function Declarations: e.g.
+        //    "function foo() { ... }"
+        //    "export async function foo() { ... }"
+        //    "export default async function foo() { ... }" (if you want to allow that too)
         category: "Functions",
         name: "Named Function Declarations",
         regex:
-          // Start-of-line + optional spaces
-          // + optional 'export'
-          // + 'function' + disallow certain keywords
-          // + valid identifier + param list
-          // + optional return type
-          // + opening curly
-          "^[ \t]*(?:export\\s+)?function\\s+(?!if|for|while|switch|catch|do)" +
+          // Explanation:
+          // ^[ \t]*    => start of line + optional indentation
+          // (?:export\s+(?:default\s+)?)? => optional 'export' and/or 'default'
+          // (?:async\s+)? => optional 'async'
+          // function\s+ => 'function' plus at least one space
+          // (?!if|for|...) => disallow certain keywords as function names
+          // [A-Za-z_$][A-Za-z0-9_$]* => valid identifier
+          // \([^)]*\) => parameter list in (...)
+          // (?:\s*:\s*...) => optional return type
+          // \s*\{ => opening curly
+          "^[ \t]*(?:export\\s+(?:default\\s+)?)?(?:async\\s+)?function\\s+(?!if|for|while|switch|catch|do)" +
           "[A-Za-z_$][A-Za-z0-9_$]*\\s*\\([^)]*\\)" +
           "(?:\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$<>,|\\[\\]?]*)?" + // optional return type
           "\\s*\\{",
       },
+
       {
         // 2) Class/Object Methods: e.g. "public foo(): void { ... }", "foo(): number { ... }"
         category: "Functions",
@@ -173,15 +181,96 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
       },
 
       // TypeScript Control Flow
-      { category: "Control Flow", name: "If", regex: "\\bif\\b(?!\\s*else\\b)" },
-      { category: "Control Flow", name: "Else If", regex: "\\belse\\s+if\\b" },
-      { category: "Control Flow", name: "For", regex: "\\bfor\\b" },
-      { category: "Control Flow", name: "While", regex: "\\bwhile\\b" },
-      { category: "Control Flow", name: "Do While", regex: "\\bdo\\b" },
-      { category: "Control Flow", name: "Try", regex: "\\btry\\b" },
-      { category: "Control Flow", name: "Catch", regex: "\\bcatch\\b" },
-      { category: "Control Flow", name: "Throw", regex: "\\bthrow\\b" },
-      { category: "Control Flow", name: "Switch", regex: "\\bswitch\\b" },
+      // "if (...)" statements
+      {
+        category: "Control Flow",
+        name: "If",
+        // \bif\s*\(   => word boundary, "if", optional spaces, then "("
+        regex: "\\bif\\s*\\(",
+      },
+
+      // "else if (...)" statements
+      {
+        category: "Control Flow",
+        name: "Else If",
+        // \belse\s+if\s*\(  => ensures we see "else if("
+        regex: "\\belse\\s+if\\s*\\(",
+      },
+
+      // "for (...)" loops
+      {
+        category: "Control Flow",
+        name: "For",
+        regex: "\\bfor\\s*\\(",
+      },
+
+      // "while (...)" loops
+      {
+        category: "Control Flow",
+        name: "While",
+        regex: "\\bwhile\\s*\\(",
+      },
+
+      // "do" (often used with "do { ... } while(...)")
+      // There's no parentheses immediately after 'do' in JS/TS.
+      {
+        category: "Control Flow",
+        name: "Do While",
+        regex: "\\bdo\\b",
+      },
+
+      // "try { ... }"
+      // No parentheses right after "try"
+      {
+        category: "Control Flow",
+        name: "Try",
+        regex: "\\btry\\b",
+      },
+
+      // "catch (...)" blocks
+      {
+        category: "Control Flow",
+        name: "Catch",
+        regex: "\\bcatch\\s*\\(",
+      },
+
+      // "throw" statements often followed by an expression, not parentheses
+      {
+        category: "Control Flow",
+        name: "Throw",
+        regex: "\\bthrow\\b",
+      },
+
+      // "switch (...)" statements
+      {
+        category: "Control Flow",
+        name: "Switch",
+        regex: "\\bswitch\\s*\\(",
+      },
+
+      // "case" within switch statements
+      // Typically: "case <expression>:"
+      // The negative lookahead (?!...) is to avoid double-counting "case" on the same line
+      {
+        category: "Control Flow",
+        name: "Case",
+        regex: "\\bcase\\b(?!\\s*:.*\\bcase\\b)",
+      },
+      {
+        category: "Control Flow",
+        name: "Filter",
+        regex: "\\.filter\\s*\\(",
+      },
+      {
+        category: "Control Flow",
+        name: "Map",
+        regex: "\\.map\\s*\\(",
+      },
+      {
+        category: "Control Flow",
+        name: "ForEach",
+        regex: "\\.forEach\\s*\\(",
+      },
       {
         category: "Control Flow",
         name: "Case",
@@ -191,17 +280,31 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
       // TypeScript Operators
       { category: "Operators", name: "AND", regex: "&&(?!\\s*\\{)" },
       { category: "Operators", name: "OR", regex: "\\|\\|(?!\\s*\\{)" },
-      { category: "Operators", name: "Nullish", regex: "\\?\\?(?!\\s*\\{)" },
+      {
+        category: "Operators",
+        name: "Nullish",
+        // Explanation:
+        // - Match `??`
+        // - `(?!\\.)` ensures we don't match `??.`
+        //   (which is invalid, but helps avoid partial matches).
+        // - If you also want to exclude `??=`, use `(?![.=])` instead
+        regex: "\\?\\?(?!\\.)",
+      },
       {
         category: "Operators",
         name: "Ternary",
-        regex: "\\?(?=\\s*[\\w'\"`\\(\\[{]|\\s*(?:true|false|null))(?![.:])",
+        // Explanation:
+        // - `(?<!\\?)\\?`: negative lookbehind to ensure this '?' is NOT preceded by '?'
+        // - `(?!\\?|\\.)`: negative lookahead so next char is not '?' or '.'
+        // - `(?=...)`: requires typical ternary usage (identifier, true/false/null, etc.)
+        // - `(?![.:])`: do not allow immediate '.' or ':'
+        regex: "(?<!\\?)\\?(?!\\?|\\.)(?=\\s*[\\w'\"`\\(\\[{]|\\s*(?:true|false|null))(?![.:])",
       },
-
       // TypeScript Specific
       {
         category: "TypeScript Specific",
         name: "Optional Chaining",
+        // e.g. matches `foo?.bar`, `obj?.prop?.deep`
         regex: "\\w+(?:\\?\\.[\\w$]+)+",
       },
       {

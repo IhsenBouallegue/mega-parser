@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { SonarComplexityPlugin } from "@/plugins/sonar-complexity";
-import type { ComplexityDebug } from "@/types/debug";
+import type { ComplexityDebug } from "@/types";
 import { Language } from "@/types/enums";
 import { loadFile } from "../utils/load-file";
 
@@ -92,7 +92,7 @@ describe("SonarComplexityPlugin Tests", () => {
       { fileName: "OptionalChaining.ts", expectedComplexity: 2 },
       { fileName: "NullishCoalescing.ts", expectedComplexity: 2 },
       { fileName: "TypeGuards.ts", expectedComplexity: 3 },
-      { fileName: "AsyncFunction.ts", expectedComplexity: 4 },
+      { fileName: "AsyncFunction.ts", expectedComplexity: 3 },
       { fileName: "FunctionDetection.ts", expectedComplexity: 4 },
     ];
 
