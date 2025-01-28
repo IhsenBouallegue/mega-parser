@@ -21,48 +21,23 @@
               "    fun delete(value: T): Boolean {",
               "fun main() {"
             ],
-            "lines": [
-              6,
-              20,
-              31,
-              51
-            ],
+            "lines": [6, 20, 31, 51],
             "count": 4
           },
           {
             "category": "Control Flow",
             "name": "If",
             "regex": "\\bif\\b(?!\\s*else\\b)",
-            "matches": [
-              "if",
-              "if",
-              "if",
-              "if",
-              "if"
-            ],
-            "lines": [
-              8,
-              23,
-              32,
-              34,
-              41
-            ],
+            "matches": ["if", "if", "if", "if", "if"],
+            "lines": [8, 23, 32, 34, 41],
             "count": 5
           },
           {
             "category": "Control Flow",
             "name": "While",
             "regex": "\\bwhile\\b",
-            "matches": [
-              "while",
-              "while",
-              "while"
-            ],
-            "lines": [
-              14,
-              22,
-              40
-            ],
+            "matches": ["while", "while", "while"],
+            "lines": [14, 22, 40],
             "count": 3
           }
         ],
@@ -87,16 +62,8 @@
             "category": "Functions",
             "name": "Function",
             "regex": "^[ \t]*fun\\s*(?:<[^>]+>\\s*)?(?:[A-Za-z0-9_<>.:?]+\\.)?[A-Za-z0-9_]+\\s*\\([^)]*\\)(?:\\s*:\\s*[\\w<>\\[\\]\\?]+)?\\s*\\{",
-            "matches": [
-              "fun add(a: Int, b: Int): Int {",
-              "fun multiply(a: Int, b: Int): Int {",
-              "fun main() {"
-            ],
-            "lines": [
-              1,
-              5,
-              9
-            ],
+            "matches": ["fun add(a: Int, b: Int): Int {", "fun multiply(a: Int, b: Int): Int {", "fun main() {"],
+            "lines": [1, 5, 9],
             "count": 3
           }
         ],
@@ -134,47 +101,23 @@
               "  find(value: T): TestNode<T> | null {",
               "  delete(value: T): boolean {"
             ],
-            "lines": [
-              9,
-              23,
-              34
-            ],
+            "lines": [9, 23, 34],
             "count": 3
           },
           {
             "category": "Control Flow",
             "name": "If",
             "regex": "\\bif\\b(?!\\s*else\\b)",
-            "matches": [
-              "if",
-              "if",
-              "if",
-              "if",
-              "if"
-            ],
-            "lines": [
-              11,
-              26,
-              35,
-              37,
-              44
-            ],
+            "matches": ["if", "if", "if", "if", "if"],
+            "lines": [11, 26, 35, 37, 44],
             "count": 5
           },
           {
             "category": "Control Flow",
             "name": "While",
             "regex": "\\bwhile\\b",
-            "matches": [
-              "while",
-              "while",
-              "while"
-            ],
-            "lines": [
-              17,
-              25,
-              43
-            ],
+            "matches": ["while", "while", "while"],
+            "lines": [17, 25, 43],
             "count": 3
           }
         ],
@@ -203,10 +146,7 @@
               "function add(a: number, b: number): number {",
               "function multiply(a: number, b: number): number {"
             ],
-            "lines": [
-              1,
-              5
-            ],
+            "lines": [1, 5],
             "count": 2
           }
         ],

@@ -44,7 +44,7 @@ export class SonarManager {
           spinner.succeed("✅ SonarQube is ready!");
           return;
         }
-        
+
         spinner.text = `⏳ Waiting for SonarQube to be ready... (${elapsedTime / 1000}s)`;
       } catch (error) {
         spinner.text = `⏳ Waiting for SonarQube to start... (${elapsedTime / 1000}s)`;

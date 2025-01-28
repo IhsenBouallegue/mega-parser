@@ -1,6 +1,6 @@
 import type { IMetricPlugin } from "@/types";
-import type { ComplexityDebug, ComplexityPattern } from "@/types/debug";
-import { Language } from "@/types/enums";
+import type { ComplexityDebug, ComplexityPattern } from "@/types";
+import { Language } from "@/types";
 
 export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
   name = "sonar_complexity";
