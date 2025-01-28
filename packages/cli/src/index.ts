@@ -33,7 +33,12 @@ program
     (value) => value.split(","),
   )
   .option("-o, --output <path>", "Base output path for generated files (extensions will be added based on exporter)")
-  .option("-d, --debug", "Enable debug mode for detailed metric calculations");
+  .option("-d, --debug", "Enable debug mode for detailed metric calculations")
+  .option(
+    "--convert <format>",
+    "Convert an existing analysis file to a different format (SimpleJson or CodeChartaJson)",
+  )
+  .option("--input <file>", "Input file to convert (use with --convert)");
 
 async function loadGitignoreRules(basePath: string, extraExcludes: string[] = []): Promise<Ignore> {
   const ig = ignore({
@@ -173,6 +178,55 @@ async function getFilesFromPath(
 async function run() {
   try {
     const options = program.opts();
+
+    // Handle conversion if requested
+    if (options.convert) {
+      if (!options.input) {
+        console.error(chalk.red("Error: --input is required when using --convert"));
+        process.exit(1);
+      }
+
+      try {
+        const inputContent = await fs.readFile(options.input, "utf-8");
+        const inputData = JSON.parse(inputContent);
+
+        const megaParser = new MegaParser([]);
+        megaParser.rawOutputData = inputData;
+
+        const targetFormat = options.convert.trim() as ExportPluginEnum;
+        if (!Object.values(ExportPluginEnum).includes(targetFormat)) {
+          console.error(chalk.red(`Invalid export format: ${targetFormat}`));
+          process.exit(1);
+        }
+
+        const result = megaParser.convertToFormat(targetFormat);
+
+        // Use input filename as base for output
+        const basePath = options.output || options.input;
+        const outputDir = path.dirname(basePath);
+        const baseFilename = path.basename(basePath, path.extname(basePath));
+
+        const filename =
+          outputDir === "."
+            ? `${baseFilename}.${result.extension}`
+            : path.join(outputDir, `${baseFilename}.${result.extension}`);
+
+        if (outputDir !== ".") {
+          await fs.ensureDir(outputDir);
+        }
+
+        await fs.writeFile(filename, result.content);
+        console.log(chalk.green(`\nConverted file saved to ${filename}`));
+        return;
+      } catch (error) {
+        console.error(
+          chalk.red("\nError converting file:"),
+          error instanceof Error ? error.message : "An unknown error occurred",
+        );
+        process.exit(1);
+      }
+    }
+
     let inputPath: string;
     let selectedMetrics: MetricPluginEnum[];
     let selectedExporters: ExportPluginEnum[];

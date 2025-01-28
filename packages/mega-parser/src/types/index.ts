@@ -13,7 +13,7 @@ export interface FileObject {
   language: Language;
   content: string;
   metrics: { [metricName: string]: number };
-  debugInfo?: unknown[];
+  debugInfo?: { [pluginName: string]: unknown };
 }
 
 export interface IMetricPlugin<DebugInfo> {

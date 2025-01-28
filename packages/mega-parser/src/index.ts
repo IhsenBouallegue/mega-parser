@@ -103,14 +103,18 @@ export class MegaParser {
       );
 
       fileObj.metrics = {};
+      if (debug) {
+        fileObj.debugInfo = {};
+      }
 
       for (const plugin of applicablePlugins) {
         const metricValue = plugin.calculate(fileObj.content, fileObj.language, debug);
         fileObj.metrics[plugin.name] = metricValue;
-        if (debug) {
-          fileObj.debugInfo = fileObj.debugInfo || [];
-
-          fileObj.debugInfo?.push(plugin.getDebugInfo());
+        if (debug && fileObj.debugInfo) {
+          const debugInfo = plugin.getDebugInfo();
+          if (debugInfo) {
+            fileObj.debugInfo[plugin.name] = debugInfo;
+          }
         }
       }
 
@@ -135,6 +139,22 @@ export class MegaParser {
 
     const extension = exportPluginEnum === ExportPluginEnum.CodeChartaJson ? "cc.json" : "json";
     return { content: output, extension };
+  }
+
+  /**
+   * Converts raw output data to a different export format
+   * @param targetFormat The export format to convert to
+   * @returns The converted output with extension
+   */
+  public convertToFormat(targetFormat: ExportPluginEnum): ExportOutput {
+    const plugin = this.availableExportPlugins.get(targetFormat);
+    if (!plugin) {
+      throw new Error(`Export plugin ${targetFormat} not found`);
+    }
+
+    const content = plugin.export(this.rawOutputData);
+    const extension = targetFormat === ExportPluginEnum.CodeChartaJson ? "cc.json" : "json";
+    return { content, extension };
   }
 
   /**

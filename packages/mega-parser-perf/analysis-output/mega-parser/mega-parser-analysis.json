@@ -8,9 +8,8 @@
       "rloc": 50,
       "sonar_complexity": 12
     },
-    "debugInfo": [
-      null,
-      {
+    "debugInfo": {
+      "sonar_complexity": {
         "patterns": [
           {
             "category": "Functions",
@@ -68,10 +67,9 @@
           }
         ],
         "totalComplexity": 12,
-        "code": "data class Node<T>(var value: T, var next: Node<T>? = null)\r\n\r\nclass LinkedList<T> {\r\n    private var head: Node<T>? = null\r\n\r\n    fun insert(value: T) {\r\n        val newNode = Node(value)\r\n        if (head == null) {\r\n            head = newNode\r\n            return\r\n        }\r\n\r\n        var current = head\r\n        while (current?.next != null) {\r\n            current = current.next\r\n        }\r\n        current?.next = newNode\r\n    }\r\n\r\n    fun find(value: T): Node<T>? {\r\n        var current = head\r\n        while (current != null) {\r\n            if (current.value == value) {\r\n                return current\r\n            }\r\n            current = current.next\r\n        }\r\n        return null\r\n    }\r\n\r\n    fun delete(value: T): Boolean {\r\n        if (head == null) return false\r\n\r\n        if (head?.value == value) {\r\n            head = head?.next\r\n            return true\r\n        }\r\n\r\n        var current = head\r\n        while (current?.next != null) {\r\n            if (current.next?.value == value) {\r\n                current.next = current.next?.next\r\n                return true\r\n            }\r\n            current = current.next\r\n        }\r\n        return false\r\n    }\r\n}\r\n\r\nfun main() {\r\n    val list = LinkedList<Int>()\r\n    list.insert(1)\r\n    list.insert(2)\r\n    list.insert(3)\r\n    println(list.find(2))\r\n    list.delete(2)\r\n} ",
         "language": "kotlin"
       }
-    ]
+    }
   },
   {
     "path": "kotlin/simple.kt",
@@ -82,9 +80,8 @@
       "rloc": 10,
       "sonar_complexity": 3
     },
-    "debugInfo": [
-      null,
-      {
+    "debugInfo": {
+      "sonar_complexity": {
         "patterns": [
           {
             "category": "Functions",
@@ -104,17 +101,17 @@
           }
         ],
         "totalComplexity": 3,
-        "code": "fun add(a: Int, b: Int): Int {\r\n    return a + b\r\n}\r\n\r\nfun multiply(a: Int, b: Int): Int {\r\n    return a * b\r\n}\r\n\r\nfun main() {\r\n    println(add(2, 3))\r\n    println(multiply(4, 5))\r\n} ",
         "language": "kotlin"
       }
-    ]
+    }
   },
   {
     "path": "sonar-project.properties",
     "name": "sonar-project.properties",
     "language": "unknown",
     "content": "sonar.projectKey=mega_parser_perf\r\nsonar.projectName=Mega Parser Performance Tests\r\nsonar.projectVersion=1.0\r\n\r\n# Path is relative to the sonar-project.properties file\r\nsonar.sources=.\r\n\r\n# Language-specific configurations\r\nsonar.typescript.file.suffixes=.ts\r\nsonar.kotlin.file.suffixes=.kt\r\n\r\n# Encoding of the source code\r\nsonar.sourceEncoding=UTF-8\r\n\r\n# Analysis settings\r\nsonar.verbose=true\r\nsonar.log.level=DEBUG\r\n\r\n# Exclude patterns\r\nsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.test.*\r\n\r\n# Host URL (if not default)\r\nsonar.host.url=http://localhost:9000 ",
-    "metrics": {}
+    "metrics": {},
+    "debugInfo": {}
   },
   {
     "path": "typescript/complex.ts",
@@ -125,9 +122,8 @@
       "rloc": 51,
       "sonar_complexity": 11
     },
-    "debugInfo": [
-      null,
-      {
+    "debugInfo": {
+      "sonar_complexity": {
         "patterns": [
           {
             "category": "Functions",
@@ -183,10 +179,9 @@
           }
         ],
         "totalComplexity": 11,
-        "code": "interface TestNode<T> {\r\n  value: T;\r\n  next: TestNode<T> | null;\r\n}\r\n\r\nclass LinkedList<T> {\r\n  private head: TestNode<T> | null = null;\r\n\r\n  insert(value: T): void {\r\n    const newNode: TestNode<T> = { value, next: null };\r\n    if (!this.head) {\r\n      this.head = newNode;\r\n      return;\r\n    }\r\n\r\n    let current = this.head;\r\n    while (current.next) {\r\n      current = current.next;\r\n    }\r\n    current.next = newNode;\r\n  }\r\n\r\n  find(value: T): TestNode<T> | null {\r\n    let current = this.head;\r\n    while (current) {\r\n      if (current.value === value) {\r\n        return current;\r\n      }\r\n      current = current.next;\r\n    }\r\n    return null;\r\n  }\r\n\r\n  delete(value: T): boolean {\r\n    if (!this.head) return false;\r\n\r\n    if (this.head.value === value) {\r\n      this.head = this.head.next;\r\n      return true;\r\n    }\r\n\r\n    let current = this.head;\r\n    while (current.next) {\r\n      if (current.next.value === value) {\r\n        current.next = current.next.next;\r\n        return true;\r\n      }\r\n      current = current.next;\r\n    }\r\n    return false;\r\n  }\r\n}\r\n\r\nconst list = new LinkedList<number>();\r\nlist.insert(1);\r\nlist.insert(2);\r\nlist.insert(3);\r\nconsole.log(list.find(2));\r\nlist.delete(2);\r\n",
         "language": "typescript"
       }
-    ]
+    }
   },
   {
     "path": "typescript/simple.ts",
@@ -197,14 +192,13 @@
       "rloc": 8,
       "sonar_complexity": 2
     },
-    "debugInfo": [
-      null,
-      {
+    "debugInfo": {
+      "sonar_complexity": {
         "patterns": [
           {
             "category": "Functions",
             "name": "Named Function Declarations",
-            "regex": "^[ \t]*function\\s+(?!if|for|while|switch|catch|do)[A-Za-z_$][A-Za-z0-9_$]*\\s*\\([^)]*\\)(?:\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$<>,|\\[\\]?]*)?\\s*\\{",
+            "regex": "^[ \t]*(?:export\\s+)?function\\s+(?!if|for|while|switch|catch|do)[A-Za-z_$][A-Za-z0-9_$]*\\s*\\([^)]*\\)(?:\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$<>,|\\[\\]?]*)?\\s*\\{",
             "matches": [
               "function add(a: number, b: number): number {",
               "function multiply(a: number, b: number): number {"
@@ -217,9 +211,8 @@
           }
         ],
         "totalComplexity": 2,
-        "code": "function add(a: number, b: number): number {\r\n  return a + b;\r\n}\r\n\r\nfunction multiply(a: number, b: number): number {\r\n  return a * b;\r\n}\r\n\r\nconsole.log(add(2, 3));\r\nconsole.log(multiply(4, 5));\r\n",
         "language": "typescript"
       }
-    ]
+    }
   }
 ]

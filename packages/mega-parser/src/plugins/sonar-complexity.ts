@@ -127,13 +127,12 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
         name: "Named Function Declarations",
         regex:
           // Start-of-line + optional spaces
-          // + "function" + space
-          // + disallow certain keywords
-          // + valid JS/TS identifier
-          // + param list (...)
-          // + optional return type `: SomeType`
+          // + optional 'export'
+          // + 'function' + disallow certain keywords
+          // + valid identifier + param list
+          // + optional return type
           // + opening curly
-          "^[ \t]*function\\s+(?!if|for|while|switch|catch|do)" +
+          "^[ \t]*(?:export\\s+)?function\\s+(?!if|for|while|switch|catch|do)" +
           "[A-Za-z_$][A-Za-z0-9_$]*\\s*\\([^)]*\\)" +
           "(?:\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$<>,|\\[\\]?]*)?" + // optional return type
           "\\s*\\{",
@@ -267,7 +266,6 @@ export class SonarComplexityPlugin implements IMetricPlugin<ComplexityDebug> {
       debug: {
         patterns,
         totalComplexity: complexity,
-        code: cleanCode,
         language: language.toLowerCase(),
       },
     };
@@ -359,12 +357,12 @@ function removeKotlinCommentsAndStrings(code: string): string {
 
 function removeTypeScriptCommentsAndStrings(code: string): string {
   const patterns = [
-    /\/\/.*$/gm, // Single-line comments
-    /\/\*[\s\S]*?\*\//g, // Multi-line comments
-    /"(?:[^"\\]|\\.)*"/g, // Double-quoted strings
-    /'(?:[^'\\]|\\.)*'/g, // Single-quoted strings
+    // /\/\/.*$/gm, // Single-line comments
+    // /\/\*[\s\S]*?\*\//g, // Multi-line comments
+    // /"(?:[^"\\]|\\.)*"/g, // Double-quoted strings
+    // /'(?:[^'\\]|\\.)*'/g, // Single-quoted strings
     /`(?:[^`\\]|\\.)*`/g, // Template literals
-    /\/(?:[^/\\]|\\.)*\/[gimuy]*/g, // Regular expressions
+    // /\/(?:[^/\\]|\\.)*\/[gimuy]*/g, // Regular expressions
   ];
 
   let codeWithoutCommentsAndStrings = code;
