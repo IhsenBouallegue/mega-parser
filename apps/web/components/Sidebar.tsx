@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/store/useStore";
 import { ChevronRight, File, Folder, Search, X } from "lucide-react";
 import type { FileObject } from "mega-parser";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 interface FileTreeItem {
   name: string;
@@ -81,7 +81,7 @@ function buildFileTree(files: FileObject[]): FileTreeItem[] {
   return root.children || [];
 }
 
-function highlightMatch(text: string, searchTerm: string): JSX.Element {
+function highlightMatch(text: string, searchTerm: string): ReactNode {
   if (!searchTerm) return <>{text}</>;
 
   const normalizedText = text.toLowerCase();

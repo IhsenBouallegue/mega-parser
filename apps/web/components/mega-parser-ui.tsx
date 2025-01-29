@@ -13,7 +13,6 @@ import {
   MetricPluginEnum,
 } from "mega-parser";
 import { useState } from "react";
-import { DebugViewer } from "./debug-viewer";
 import { ExporterSelector } from "./exporter-selector";
 import { FileFilterOptions } from "./file-filter-options";
 import { FileSelector } from "./file-selector";
@@ -457,7 +456,10 @@ export default function MegaParserUI() {
           </TabsContent>
           <TabsContent value="debug" className="flex-1 h-[calc(100vh-12rem)]">
             {output && debugMode ? (
-              <DebugViewer files={output} />
+              // <DebugViewer files={output} />
+              <div className="text-center text-muted-foreground p-4">
+                Enable debug mode and run analysis to see debug information
+              </div>
             ) : (
               <div className="text-center text-muted-foreground p-4">
                 Enable debug mode and run analysis to see debug information

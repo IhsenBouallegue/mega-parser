@@ -1,3 +1,6 @@
+export * from "./types";
+export { Language, detectLanguage };
+
 import { CodeChartaJsonExport } from "@/plugins/exports/CodeChartaJsonExport";
 import type { IExportPlugin } from "@/plugins/exports/IExportPlugin";
 import { SimpleJsonExport } from "@/plugins/exports/SimpleJsonExport";
@@ -6,9 +9,6 @@ import { SonarComplexityPlugin } from "@/plugins/sonar-complexity";
 import type { FileInput, FileObject, IMetricPlugin } from "@/types";
 import { Language } from "@/types/enums";
 import { detectLanguage } from "@/utils/languge-detector";
-
-export type { FileInput, FileObject, IMetricPlugin, IExportPlugin };
-export { Language, detectLanguage };
 
 export interface ExportOutput {
   content: string;

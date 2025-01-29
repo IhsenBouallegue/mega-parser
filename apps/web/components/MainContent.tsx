@@ -8,25 +8,17 @@ import { GlassmorphicContainer } from "@/components/ui/styled";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from "@/store/useStore";
-import { Bug, Code, Inspect, ListCollapse } from "lucide-react";
+import { Bug, Code, ListCollapse } from "lucide-react";
+import type { ComplexityDebug, ComplexityPattern } from "mega-parser";
 import { useEffect, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
-
-interface Pattern {
-  category: string;
-  name: string;
-  regex: string;
-  matches: string[];
-  lines: number[];
-  count: number;
-}
 
 export default function MainContent() {
   const [activeTab, setActiveTab] = useState("content");
   const [selectedPlugin, setSelectedPlugin] = useState<string | null>(null);
   const [highlightedLine, setHighlightedLine] = useState<number | null>(null);
-  const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null);
+  const [selectedPattern, setSelectedPattern] = useState<ComplexityPattern | null>(null);
   const selectedFile = useStore((state) => state.selectedFile);
 
   useEffect(() => {
@@ -42,7 +34,7 @@ export default function MainContent() {
     if (!selectedFile?.content) return null;
 
     const lines = selectedFile.content.split("\n");
-    const debugInfo = selectedFile.debugInfo?.[selectedPlugin || ""];
+    const debugInfo = selectedFile.debugInfo?.[selectedPlugin || ""] as ComplexityDebug | undefined;
     const patterns = debugInfo?.patterns || [];
 
     return (
@@ -62,7 +54,7 @@ export default function MainContent() {
             lineProps={(lineNumber) => {
               const isHighlightedLine = highlightedLine === lineNumber;
               const hasPattern = patterns.some(
-                (pattern: Pattern) =>
+                (pattern: ComplexityPattern) =>
                   pattern.lines.includes(lineNumber) && lines[lineNumber - 1].match(new RegExp(pattern.regex, "g")),
               );
               const isSelectedPattern =
@@ -114,7 +106,7 @@ export default function MainContent() {
             <div key={category} className="debug-section">
               <h3 className="text-lg font-medium mb-4">{category}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {patterns.map((pattern: Pattern) => (
+                {patterns.map((pattern: ComplexityPattern) => (
                   <Card
                     key={`${pattern.name}-${pattern.regex}`}
                     className={`debug-pattern cursor-pointer transition-colors ${
@@ -197,15 +189,6 @@ export default function MainContent() {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
-
-        {/* <TabsList className="flex justify-between items-center rounded-md">
-          <h2 className="text-lg font-bold pl-2 text-black">{selectedFile.name}</h2>
-          <div>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="debug">Debug</TabsTrigger>
-          </div>
-        </TabsList> */}
 
         <GlassmorphicContainer className="flex-1 overflow-hidden">
           <TabsContent value="details" className="h-full">
