@@ -41,8 +41,7 @@ jobs:
       - name: Build mega-parser CLI
         run: |
           cd packages/cli
-          bun run build
-          bun build ./dist/index.js --compile --target=${{ matrix.target }} --minify --sourcemap --outfile mega-parser-${{ matrix.target }}
+          bun build ./src/index.ts --compile --target=${{ matrix.target }} --minify --sourcemap --outfile mega-parser-${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
