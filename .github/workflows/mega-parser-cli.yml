@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mega-parser-${{ matrix.target }}
-          path: packages/cli/mega-parser-${{ matrix.target }}
+          path: packages/cli/mega-parser-${{ matrix.target }}${{ matrix.target == 'bun-windows-x64' && '.exe' || '' }}
           if-no-files-found: error
           retention-days: 1
 
@@ -80,6 +80,6 @@ jobs:
           files: |
             artifacts/mega-parser-bun-linux-x64/mega-parser-bun-linux-x64
             artifacts/mega-parser-bun-linux-arm64/mega-parser-bun-linux-arm64
-            artifacts/mega-parser-bun-windows-x64/mega-parser-bun-windows-x64
+            artifacts/mega-parser-bun-windows-x64/mega-parser-bun-windows-x64.exe
             artifacts/mega-parser-bun-darwin-x64/mega-parser-bun-darwin-x64
             artifacts/mega-parser-bun-darwin-arm64/mega-parser-bun-darwin-arm64 

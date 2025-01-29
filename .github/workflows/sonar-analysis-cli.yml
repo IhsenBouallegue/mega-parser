@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sonar-analysis-${{ matrix.target }}
-          path: packages/automated-sonar-analysis/sonar-analysis-${{ matrix.target }}
+          path: packages/automated-sonar-analysis/sonar-analysis-${{ matrix.target }}${{ matrix.target == 'bun-windows-x64' && '.exe' || '' }}
           if-no-files-found: error
           retention-days: 1
 
@@ -80,6 +80,6 @@ jobs:
           files: |
             artifacts/sonar-analysis-bun-linux-x64/sonar-analysis-bun-linux-x64
             artifacts/sonar-analysis-bun-linux-arm64/sonar-analysis-bun-linux-arm64
-            artifacts/sonar-analysis-bun-windows-x64/sonar-analysis-bun-windows-x64
+            artifacts/sonar-analysis-bun-windows-x64/sonar-analysis-bun-windows-x64.exe
             artifacts/sonar-analysis-bun-darwin-x64/sonar-analysis-bun-darwin-x64
             artifacts/sonar-analysis-bun-darwin-arm64/sonar-analysis-bun-darwin-arm64 
