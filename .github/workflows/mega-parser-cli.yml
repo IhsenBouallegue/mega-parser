@@ -45,4 +45,37 @@ jobs:
           name: mega-parser-${{ matrix.target }}
           path: packages/cli/mega-parser-${{ matrix.target }}
           if-no-files-found: error
-          retention-days: 1 
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: mega-parser-${{ steps.get_version.outputs.version }}
+          name: Mega Parser CLI ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/mega-parser-bun-linux-x64/mega-parser-bun-linux-x64
+            artifacts/mega-parser-bun-linux-arm64/mega-parser-bun-linux-arm64
+            artifacts/mega-parser-bun-windows-x64/mega-parser-bun-windows-x64
+            artifacts/mega-parser-bun-darwin-x64/mega-parser-bun-darwin-x64
+            artifacts/mega-parser-bun-darwin-arm64/mega-parser-bun-darwin-arm64 

@@ -45,4 +45,37 @@ jobs:
           name: sonar-analysis-${{ matrix.target }}
           path: packages/automated-sonar-analysis/sonar-analysis-${{ matrix.target }}
           if-no-files-found: error
-          retention-days: 1 
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./packages/automated-sonar-analysis/package.json').version")
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: sonar-analysis-${{ steps.get_version.outputs.version }}
+          name: Sonar Analysis CLI ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/sonar-analysis-bun-linux-x64/sonar-analysis-bun-linux-x64
+            artifacts/sonar-analysis-bun-linux-arm64/sonar-analysis-bun-linux-arm64
+            artifacts/sonar-analysis-bun-windows-x64/sonar-analysis-bun-windows-x64
+            artifacts/sonar-analysis-bun-darwin-x64/sonar-analysis-bun-darwin-x64
+            artifacts/sonar-analysis-bun-darwin-arm64/sonar-analysis-bun-darwin-arm64 
